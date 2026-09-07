@@ -5,7 +5,7 @@ stays upstream; each recipe lives in `packages/<name>/<name>.spec`.
 
 | Package | Target | Status |
 | --- | --- | --- |
-| [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | RPM builds locally with Go 1.26.7; approved release source pending |
+| [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | 0.1.0 signed by COPR; clean VM drill pending |
 
 ## Account setup
 
@@ -26,17 +26,18 @@ on exit. Rotate the secret when its token expires.
 
 Pull requests and pushes to `main` run **Check packaging code and spec syntax**
 without COPR credentials. This covers regressions, a real fixture SRPM build,
-and Nimbus spec parsing; it does not claim that the Nimbus RPM can build yet.
+and Nimbus spec parsing. The actual Nimbus binary build is a separate manual
+COPR operation.
 
-After the workflow is reviewed and merged, open Actions > COPR > Run workflow
-on `main` and select `project` to create the configured project if absent, or
-verify the required chroots. Existing settings and packages are preserved.
+Open Actions > COPR > Run workflow on `main` and select `project` to create
+the configured project if absent, or verify the required chroots. Existing settings and packages are preserved.
 
-The `build` operation is for later: it requires the approved
-`nimbus-0.1.0-vendor.tar.gz` release asset, which is not available yet. Until
-that asset is published, run only `project`. Once available, `build` prepares
-Nimbus's source RPM, creates/verifies the project, and submits that exact
-archive. The native client waits and reports failures.
+The `build` operation prepares Nimbus's source RPM from the source asset of
+its published upstream release, creates/verifies the project, and submits that
+exact archive. The native client waits and reports failures. Before a new
+version, publish its reviewed Nimbus release and update the spec's `Version`;
+then dispatch `build` manually. Pushing either repository does not release or
+submit a package.
 
 Publishing runs are serialized. Pull requests, ordinary pushes, and dispatches
 from other branches cannot run the publish job. The `furyfree/nimbus` project

@@ -1,6 +1,6 @@
 # Nimbus RPM packaging
 
-Local packaging draft for the Nimbus engine. The engine and definitions remain
+RPM packaging for the Nimbus engine. The engine and definitions remain
 in `Furyfree/nimbus`; `Furyfree/copr` holds distribution packaging. This recipe
 supersedes the initial local `nimbus-rpm` draft. The hosted project is
 [`furyfree/nimbus`](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/).
@@ -16,29 +16,34 @@ supersedes the initial local `nimbus-rpm` draft. The hosted project is
   selector, receipts, checkout, services, or workstation provisioning.
 - Updates and removal: native DNF operations.
 
-## Current blockers
+## Build evidence and remaining gate
 
 Nimbus requires Go 1.26.7, supplied by Fedora 44's native repositories.
 Its existing dependencies require at most Go 1.25, and the complete Nimbus
 local gate passes with Go 1.26.7. No alternate compiler repository or prebuilt
 engine artifact is needed for this recipe.
 
-An offline Fedora 44 container built both source and binary RPMs from a private
-local snapshot with its native Go 1.26.7 compiler. The recipe's Go tests and
-definition validation passed. Its Go license path uses Fedora's license
-directory. This verifies local packaging; the snapshot is not a signed release
-and was not submitted to COPR or installed in the VM.
+[Release v0.1.0](https://github.com/Furyfree/nimbus/releases/tag/v0.1.0) contains
+the reviewed vendored source from Nimbus commit
+`e1c081bb31ddc8d9c3823a8859b43c6188fe50d3`. Its archive SHA-256 is
+`54e113b54c11d09def622c639a59e4ad7d30378020e3bd8d77c57c4072950808`.
 
-Configure `COPR_OWNER` and `COPR_CONFIG` in GitHub Actions as described in the
-[repository setup](../../README.md#account-setup). A local COPR credential file
-is not required. The actual project signing key must be obtained and verified
-after project creation; never put private keys in either repository.
+[COPR build 10958015](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10958015/)
+succeeded with build networking disabled. The hosted SRPM contains the exact
+published source archive. The signed RPM contains the engine and license
+notices, with no scriptlets; its binary reports `nimbus 0.1.0` and validates
+the current Nimbus definitions.
 
-The engine fixes and manual release commands are committed upstream.
-Do not upload working-tree snapshots or publish source bundles as a workaround.
-Release source must come from the approved commit after its complete checks.
-Version `0.1.0` matches the current definitions' minimum engine; release
-`0.1` marks this as preliminary RPM packaging, not an announced release.
+The official project key has fingerprint
+`8FF8 E546 C3AB E441 46CF A411 DD1D 48E2 CA0E 9F6A`. Native RPM verification in
+an isolated keyring containing only that key passed with signatures and
+digests required. Nimbus ships the reviewed key for bootstrap. The restored
+Fedora VM installation, upgrade, and removal drill remains a separate gate.
+
+Configure `COPR_OWNER` and `COPR_CONFIG` as described in the
+[repository setup](../../README.md#account-setup) when setting up another
+account. Never commit credentials or private keys. Do not upload working-tree
+snapshots; release source comes from the approved tag after its complete checks.
 
 ## Source and validation
 
@@ -59,16 +64,16 @@ license expression against the final source archive before publishing. The
 RPM retains the Unicode-DFS-2016 notice for uniseg's Unicode 15.0.0 tables
 in addition to vendored module notices and the Go license.
 
-Once the toolchain and approved source archive are available, build an SRPM
+To reproduce source preparation locally, build an SRPM
 with `python3 scripts/srpm.py --spec packages/nimbus/nimbus.spec --outdir /tmp/nimbus-srpm`
 from the repository root, then build it in an isolated Fedora 44 buildroot.
 Inspect its payload, dependencies,
 scriptlets, and engine version.
-Test install, upgrade, and removal in a disposable VM before distribution.
+Test install, upgrade, and removal in a disposable VM before declaring the
+installation flow validated.
 
-After an authorized COPR project creation and successful build, verify its
-public signing-key fingerprint and signed RPM. Add that real pin and the
-verified installation path to Nimbus bootstrap, then repeat the one-liner
-drill from a clean Fedora VM. Never use a placeholder pin or `--nogpgcheck`.
+For later signing-key changes, verify the new public key and its signed RPM
+before updating Nimbus's bootstrap pin. Repeat the one-liner drill from a
+clean Fedora VM. Never use a placeholder pin or `--nogpgcheck`.
 
 Reference: [COPR user documentation](https://docs.copr.fedorainfracloud.org/user_documentation.html).
