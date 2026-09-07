@@ -39,8 +39,8 @@ Nimbus's source RPM, creates/verifies the project, and submits that exact
 archive. The native client waits and reports failures.
 
 Publishing runs are serialized. Pull requests, ordinary pushes, and dispatches
-from other branches cannot run the publish job. No workflow has been triggered
-by the local setup. There are no automatic rebuild webhooks or deletion calls.
+from other branches cannot run the publish job. The `furyfree/nimbus` project
+has been created through the manual `project` operation. There are no automatic rebuild webhooks or deletion calls.
 
 Project settings are in [.copr/project.toml](.copr/project.toml). Binary builds
 use Fedora 44 x86_64 with network access disabled. Source preparation downloads
