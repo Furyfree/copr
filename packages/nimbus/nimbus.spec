@@ -14,6 +14,7 @@ ExclusiveArch:  x86_64
 BuildRequires:  golang >= 1.26.7
 BuildRequires:  git-core
 BuildRequires:  gnupg2
+BuildRequires:  python3
 Requires:       dnf5
 Requires:       rpm
 Requires:       flatpak

@@ -69,7 +69,8 @@ exclude `.git`, local runtime state, and unpublished working-tree changes.
 Record the approved commit and archive SHA-256 with the release artifacts.
 
 Compilation and tests use vendored modules with network/toolchain downloading
-disabled. `%check` runs all Go tests and validates the packaged definitions
+disabled. System Python 3 is a build requirement for the isolated handoff
+regressions. `%check` runs all Go tests and validates the packaged definitions
 fixture; those definitions are not installed by the RPM. Review the bundled
 license expression against the final source archive before publishing. The
 RPM retains the Unicode-DFS-2016 notice for uniseg's Unicode 15.0.0 tables
