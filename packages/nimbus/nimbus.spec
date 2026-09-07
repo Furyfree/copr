@@ -6,7 +6,7 @@ Name:           nimbus
 Version:        0.1.0
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
-License:        MIT AND BSD-3-Clause AND Apache-2.0
+License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
 URL:            https://github.com/Furyfree/nimbus
 Source0:        %{url}/releases/download/v%{version}/nimbus-%{version}-vendor.tar.gz
 ExclusiveArch:  x86_64
@@ -54,7 +54,7 @@ find vendor -type f \( -iname 'license*' -o -iname 'copying*' \
 cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 
 %files
-%license LICENSE bundled-licenses
+%license LICENSE bundled-licenses licenses/Unicode-DFS-2016.txt
 %{_bindir}/nimbus
 
 %changelog
