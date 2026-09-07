@@ -1,9 +1,9 @@
-# First-release packaging draft. Source0 must contain the reviewed source
-# tree and its vendored modules, rooted at nimbus-0.1.0/.
+# Source0 contains the reviewed release source and its vendored modules,
+# rooted at nimbus-%{version}/.
 %global debug_package %{nil}
 
 Name:           nimbus
-Version:        0.1.0
+Version:        0.1.1
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -14,6 +14,7 @@ ExclusiveArch:  x86_64
 BuildRequires:  golang >= 1.26.7
 BuildRequires:  git-core
 BuildRequires:  gnupg2
+BuildRequires:  python3
 Requires:       dnf5
 Requires:       rpm
 Requires:       flatpak
@@ -58,5 +59,8 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 07 2026 Nimbus maintainers - 0.1.1-0.1
+- Package the installation prompt, logging, and repository-convergence fixes.
+
 * Mon Sep 07 2026 Nimbus maintainers - 0.1.0-0.1
 - Prepare the first engine RPM; distribution gates remain open.
