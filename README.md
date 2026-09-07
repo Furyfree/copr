@@ -29,12 +29,14 @@ without COPR credentials. This covers regressions, a real fixture SRPM build,
 and Nimbus spec parsing; it does not claim that the Nimbus RPM can build yet.
 
 After the workflow is reviewed and merged, open Actions > COPR > Run workflow
-on `main` and select:
+on `main` and select `project` to create the configured project if absent, or
+verify the required chroots. Existing settings and packages are preserved.
 
-- `project`: create the configured project if absent, or verify the required
-  chroots on the existing project. Existing settings and packages are preserved.
-- `build`: first prepare Nimbus's source RPM, then create/verify the project
-  and submit that exact archive. The native client waits and reports failures.
+The `build` operation is for later: it requires the approved
+`nimbus-0.1.0-vendor.tar.gz` release asset, which is not available yet. Until
+that asset is published, run only `project`. Once available, `build` prepares
+Nimbus's source RPM, creates/verifies the project, and submits that exact
+archive. The native client waits and reports failures.
 
 Publishing runs are serialized. Pull requests, ordinary pushes, and dispatches
 from other branches cannot run the publish job. No workflow has been triggered

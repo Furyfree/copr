@@ -34,7 +34,7 @@ Configure `COPR_OWNER` and `COPR_CONFIG` in GitHub Actions as described in the
 is not required. The actual project signing key must be obtained and verified
 after project creation; never put private keys in either repository.
 
-The engine fixes are uncommitted and its GitHub repository remains private.
+The engine fixes are uncommitted; its GitHub repository is now public.
 Do not upload working-tree snapshots or publish source bundles as a workaround.
 Release source must come from the approved commit after its complete checks.
 Version `0.1.0` matches the current definitions' minimum engine; release
