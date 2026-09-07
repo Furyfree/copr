@@ -1,0 +1,10 @@
+*.rpm
+*.tar.gz
+/BUILD/
+/BUILDROOT/
+/RPMS/
+/SOURCES/
+/SRPMS/
+__pycache__/
+*.py[cod]
+.env
