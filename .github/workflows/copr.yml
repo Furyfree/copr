@@ -1,0 +1,65 @@
+name: COPR
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Create the project, or build and publish Nimbus
+        type: choice
+        options: [project, build]
+        default: project
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check packaging code and spec syntax
+    runs-on: ubuntu-latest
+    container: registry.fedoraproject.org/fedora:44
+    steps:
+      - run: dnf5 -y install git make python3 rpm-build rpmdevtools
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - run: make check
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container: registry.fedoraproject.org/fedora:44
+    concurrency:
+      group: copr-publish
+      cancel-in-progress: false
+    steps:
+      - run: dnf5 -y install git make python3 rpm-build rpmdevtools copr-cli python3-copr
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Prepare Nimbus source RPM
+        if: inputs.operation == 'build'
+        run: python3 scripts/srpm.py --spec packages/nimbus/nimbus.spec --outdir /tmp/nimbus-srpm
+      - name: Create project or submit build
+        shell: bash
+        env:
+          COPR_OWNER: ${{ vars.COPR_OWNER }}
+          COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          if [[ "$OPERATION" == project ]]; then
+            python3 scripts/publish.py project
+          elif [[ "$OPERATION" == build ]]; then
+            shopt -s nullglob
+            packages=(/tmp/nimbus-srpm/*.src.rpm)
+            [[ ${#packages[@]} == 1 ]]
+            python3 scripts/publish.py build --srpm "${packages[0]}"
+          else
+            exit 1
+          fi
