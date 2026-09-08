@@ -46,20 +46,32 @@ Configure `COPR_OWNER` and `COPR_CONFIG` as described in the
 account. Never commit credentials or private keys. Do not upload working-tree
 snapshots; release source comes from the approved tag after its complete checks.
 
-## Version 0.2.0 preparation
+## Version 0.2.0 release
 
 The recipe selects `v0.2.0` for system resource ownership, Noctalia login,
-recovery-session definitions, and installer improvements. The unpublished
-candidate passed installation, reboot, and normal Hyprland login on Fedora 44.
+recovery-session definitions, and installer improvements. Before publication,
+the candidate passed installation, reboot, and normal Hyprland login on Fedora
+44.
 The keyring PAM dependency is included in the versioned desktop definitions;
 it is not an unconditional engine RPM dependency.
 
-The package preserves the offline Go build, engine-only payload, dependency
-license handling, and signing policy. Upstream source publication and the
-manual COPR build remain separate gates. Verify the final source checksum,
-RPM signature, payload, and version before a disposable VM package trial.
-Recovery and portal drills remain tracked in Nimbus's tasks; successful
-packaging does not establish those behaviors.
+[Release v0.2.0](https://github.com/Furyfree/nimbus/releases/tag/v0.2.0) selects
+Nimbus commit `12781bcc2673123b0f97dd7b4f9ae1216d648815`. Its source archive
+SHA-256 is
+`b52ecbab8e3b7d197ba449f986c062cf7c3fcf4c4e801be33d46a3037ed5adc2`.
+
+[COPR build 10961922](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10961922/)
+succeeded for `nimbus-0.2.0-0.1.fc44.x86_64` with build networking disabled.
+The uploaded SRPM contains the byte-identical published source archive.
+Verification in an isolated RPM database containing only the pinned project
+key passed the signatures and digests. Payload inspection confirms only the
+engine and license notices, with no scriptlets. The extracted binary reports
+`nimbus 0.2.0` and validates all three definitions as an unprivileged user in a
+network-disabled container.
+
+The manual release and COPR workflows both passed. A signed-package VM trial,
+keyring unlocking, recovery and portal drills remain tracked in Nimbus's tasks;
+successful packaging does not establish those behaviors.
 
 ## Source and validation
 
