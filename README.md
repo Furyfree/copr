@@ -5,7 +5,7 @@ stays upstream; each recipe lives in `packages/<name>/<name>.spec`.
 
 | Package | Target | Status |
 | --- | --- | --- |
-| [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | 0.1.1 packaging prepared; release and build pending |
+| [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | 0.2.0 packaging prepared; release and build pending |
 
 ## Account setup
 
