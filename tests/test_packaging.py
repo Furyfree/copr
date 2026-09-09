@@ -1,6 +1,8 @@
+import hashlib
 import importlib.util
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -86,6 +88,53 @@ An isolated packaging fixture.
                                        text=True)
         self.assertEqual(name, "hello")
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.package.iterdir()})
+
+
+class NimbusSource(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("rpmbuild") and shutil.which("rpmspec"),
+                         "requires RPM build tools; run the container gate")
+    def test_checksum_precedes_native_source_extraction(self):
+        recipe = ROOT / "packages/nimbus/nimbus.spec"
+        version = subprocess.check_output(
+            ["rpmspec", "-q", "--srpm", "--qf", "%{VERSION}", str(recipe)],
+            text=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / f"nimbus-{version}"
+            source.mkdir()
+            marker = source / "extraction-marker"
+            marker.write_text("approved source\n")
+            archive = root / f"nimbus-{version}-vendor.tar.gz"
+            with tarfile.open(archive, "w:gz") as output:
+                output.add(source, arcname=source.name)
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            spec = root / "nimbus.spec"
+            spec.write_text(re.sub(r"(?m)^%global source_sha256 [0-9a-f]{64}$",
+                                   f"%global source_sha256 {digest}",
+                                   recipe.read_text()))
+            for changed in [False, True]:
+                with self.subTest(changed=changed):
+                    if changed:
+                        marker.write_text("changed source\n")
+                        with tarfile.open(archive, "w:gz") as output:
+                            output.add(source, arcname=source.name)
+                    build = root / ("changed" if changed else "approved")
+                    result = subprocess.run(
+                        ["rpmbuild", "-bp", "--nodeps", str(spec),
+                         "--define", f"_topdir {build}",
+                         "--define", f"_sourcedir {root}"],
+                        capture_output=True, text=True)
+                    log = result.stdout + result.stderr
+                    extracted = list(build.rglob("extraction-marker"))
+                    if changed:
+                        self.assertNotEqual(result.returncode, 0, log)
+                        self.assertIn("FAILED", log)
+                        self.assertEqual(extracted, [], log)
+                    else:
+                        self.assertEqual(result.returncode, 0, log)
+                        self.assertEqual(len(extracted), 1, log)
+                        self.assertEqual(extracted[0].read_text(),
+                                         "approved source\n")
 
 
 class Publishing(unittest.TestCase):
