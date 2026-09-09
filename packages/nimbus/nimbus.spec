@@ -3,7 +3,7 @@
 %global debug_package %{nil}
 
 Name:           nimbus
-Version:        0.2.0
+Version:        0.2.1
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -59,6 +59,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Wed Sep 09 2026 Nimbus maintainers - 0.2.1-0.1
+- Package promptless init, toolkit dependencies, and Ghostty recovery fixes.
+- Retain the tested plain Hyprland session; defer UWSM adoption.
+
 * Tue Sep 08 2026 Nimbus maintainers - 0.2.0-0.1
 - Package system resources, Noctalia login, recovery session, and installer fixes.
 
