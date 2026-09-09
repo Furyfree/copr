@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 a739540ef05b89a136e6e9e2bd2d7c58dd6480de46e744e88d04cade64b491ff
+%global source_sha256 69237bd5c7f52bfc7c9d02766b6a0cadc547fcfa98958530cffe766cc8682f8c
 
 Name:           nimbus
-Version:        0.2.2
+Version:        0.2.3
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,9 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Wed Sep 09 2026 Nimbus maintainers - 0.2.3-0.1
+- Fix requested package resolution in DNF dependency installation sections.
+
 * Wed Sep 09 2026 Nimbus maintainers - 0.2.2-0.1
 - Package the Go modernization and command, planning, and ownership fixes.
 - Write state marker schema 3; keep schemas 1 and 2 readable.
