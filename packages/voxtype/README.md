@@ -5,8 +5,8 @@ It builds the CPU Whisper daemon with no optional GPU/ONNX/OSD features.
 Nimbus has not selected it yet. Models, languages, hotkeys, and optional
 acceleration remain deployment choices.
 
-`prepare.py` verifies the reviewed source SHA-256 and upstream detached
-signature against `signing.asc`, then vendors the exact Cargo.lock dependencies.
+The Go source-preparation command verifies the reviewed source SHA-256 and upstream detached
+signature against `files/signing.asc`, then vendors the exact Cargo.lock dependencies.
 The key fingerprint is `9CCF7915B750CAE8B095ED1AA3FC9F33FD209279`, identified by
 [the tagged upstream release workflow](https://github.com/peteonrails/voxtype/blob/v1.0.1/.github/workflows/build-linux.yml).
 The generated SRPM includes a digest-bound source bundle; binary compilation
@@ -18,7 +18,7 @@ Use a Fedora container with the RPM tools, Cargo, Rust, GnuPG, C/C++ compiler,
 Clang development files, ALSA development files, CMake, and systemd RPM macros:
 
 ```sh
-python3 packages/voxtype/prepare.py --outdir /tmp/voxtype-srpm
+just prepare voxtype /tmp/voxtype-srpm
 rpmbuild --rebuild /tmp/voxtype-srpm/voxtype-1.0.1-0.2.fc44.src.rpm
 ```
 

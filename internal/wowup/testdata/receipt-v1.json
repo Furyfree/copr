@@ -1,0 +1,38 @@
+{
+  "entries": {
+    "WowUp-CF.AppImage": {
+      "mode": 420,
+      "sha256": "ac9b97e27d8f1ba64906af38fa0420f386a3a69b056c6c7ee6e952ebac30c2f4",
+      "type": "file"
+    },
+    "app": {
+      "mode": 493,
+      "type": "directory"
+    },
+    "app/AppRun": {
+      "mode": 493,
+      "sha256": "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb",
+      "type": "file"
+    },
+    "app/payload": {
+      "mode": 420,
+      "sha256": "4747637a45b364d4b26ed118deb5de4f719d6c7ea368d9093c911b965f7997d9",
+      "type": "file"
+    },
+    "launcher": {
+      "mode": 493,
+      "sha256": "ec1cb97fd01527ccb200fcc75849e157f7a00a8036a50be35bb9caab2863f461",
+      "type": "file"
+    },
+    "wowup-cf.desktop": {
+      "mode": 420,
+      "sha256": "0d282d596798ffdaf011f8b679c75560d740186a7491bc59554d73030121ad3a",
+      "type": "file"
+    }
+  },
+  "owner": "nimbus-wowup-cf",
+  "schema_version": 1,
+  "sha256": "ac9b97e27d8f1ba64906af38fa0420f386a3a69b056c6c7ee6e952ebac30c2f4",
+  "source": "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.1/WowUp-CF-2.23.1.AppImage",
+  "version": "2.23.1"
+}

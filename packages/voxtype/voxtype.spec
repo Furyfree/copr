@@ -1,4 +1,4 @@
-# prepare.py supplies the locked, vendored source and its exact digest.
+# coprctl prepare supplies the locked, vendored source and its exact digest.
 %global debug_package %{nil}
 %global source_sha256 UNPREPARED
 

@@ -15,3 +15,9 @@ name = "github-copilot-installer"
 chroots = ["fedora-44-x86_64"]
 description = "MIT installer helper for the official GitHub Copilot app; no app payload included"
 homepage = "https://github.com/Furyfree/copr"
+
+[projects.wowup-cf-installer]
+name = "wowup-cf-installer"
+chroots = ["fedora-44-x86_64"]
+description = "MIT installer helper for the official WoWUp CurseForge app; no app payload included"
+homepage = "https://github.com/Furyfree/copr"

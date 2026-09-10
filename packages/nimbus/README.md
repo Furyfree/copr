@@ -146,7 +146,7 @@ RPM retains the Unicode-DFS-2016 notice for uniseg's Unicode 15.0.0 tables
 in addition to vendored module notices and the Go license.
 
 To reproduce source preparation locally, build an SRPM
-with `python3 scripts/srpm.py --spec packages/nimbus/nimbus.spec --outdir /tmp/nimbus-srpm`
+with `just prepare nimbus /tmp/nimbus-srpm`
 from the repository root, then build it in an isolated Fedora 44 buildroot.
 Inspect its payload, dependencies,
 scriptlets, and engine version.

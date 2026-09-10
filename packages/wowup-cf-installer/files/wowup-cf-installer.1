@@ -1,0 +1,85 @@
+.TH WOWUP-CF-INSTALLER 1 "September 2026" "wowup-cf-installer 0.1.0"
+.SH NAME
+wowup-cf-installer \- verified official WoWUp CurseForge application delivery
+.SH SYNOPSIS
+.B wowup-cf-installer prepare --directory
+.I DIR
+.RB [ --app-version " VERSION"]
+.br
+.B wowup-cf-installer apply --appimage
+.I PATH
+.B --sha256
+.I HEX
+.B --app-version
+.I VERSION
+.B --assumeyes
+.br
+.B wowup-cf-installer status --json
+.br
+.B wowup-cf-installer uninstall --assumeyes
+.br
+.B wowup-cf-installer --version
+.SH DESCRIPTION
+This helper targets Fedora 44 x86_64. The helper RPM contains no application
+payload. Installing, upgrading or removing the RPM does not implicitly download,
+update or remove the application. DNF updates the helper; application updates
+require explicit preparation and approved application of the chosen artifact.
+.SH COMMANDS
+.TP
+.B prepare
+Run without root. Download the latest stable official CurseForge AppImage, or
+the version selected with --app-version, into a private child of an existing
+directory. Verify its exact HTTPS release URL, GitHub SHA-256, expected size and
+x86_64 type-2 AppImage identity. Print metadata JSON with schema_version, name,
+arch, version, sha256, path and source. The caller owns successful-download
+cleanup and must show the selected artifact before approval. Failure removes
+the incomplete download. These checks are not a publisher signature.
+.TP
+.B apply
+Require root and --assumeyes. Work offline. Copy the selected artifact into
+private privileged staging, verify it again, refuse downgrades and extract
+with native unsquashfs without executing the downloaded runtime. Verify owned
+files before replacement. Publish the bundle and install the fixed integration
+links. Print verified installed-state JSON. The caller must approve the exact
+version and SHA-256 before invoking this command.
+.TP
+.B status
+Read-only and offline. Print JSON containing schema_version, name, installed,
+verified, integrated and cleanup_pending, plus the approved identity when
+installed. Invalid or foreign state is an error, never successful absence.
+Missing known integration links are repairable through approved apply.
+.TP
+.B uninstall
+Require root and --assumeyes. Verify ownership before removing integration
+links and the application bundle. A durable removal journal permits resuming
+interrupted removal. Foreign or modified surviving entries block cleanup.
+Preserve home directories, application settings, games and addons.
+.SH FILES
+.TP
+.B /opt/wowup-cf/
+Owned AppImage, extracted app, launcher, desktop entry and inventory receipt.
+.TP
+.B /usr/local/bin/wowup-cf
+Owned symlink to the launch wrapper.
+.TP
+.B /usr/local/share/applications/wowup-cf.desktop
+Owned symlink to the desktop entry.
+.TP
+.B /opt/.nimbus-wowup-cf-removal.json
+Durable ownership journal for interrupted removal.
+.TP
+.B /opt/.nimbus-wowup-cf-removing
+Owned pending-removal bundle. These established paths retain their original
+Nimbus names for lifecycle compatibility.
+.SH NOTES
+The launcher clears AppImage updater environment variables, preserving addon
+updates and Chromium sandboxing. There is no timer, daemon or background update
+service. Bundle exchange is atomic; the complete install or removal transaction
+is not. Missing known links and interrupted removal can be retried, while
+unknown ownership or modified files require inspection. Empty parent directories
+remain after removal. Remove the application explicitly before removing its
+helper if both should be removed.
+.SH EXIT STATUS
+Zero indicates success. Nonzero indicates invalid input, unsupported platform,
+unverified ownership or a failed operation. SIGTERM and keyboard interruption
+return nonzero. A failed operation must not receive a successful caller receipt.

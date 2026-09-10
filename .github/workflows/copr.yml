@@ -15,7 +15,7 @@ on:
       package:
         description: Package to publish independently
         type: choice
-        options: [nimbus, voxtype, github-copilot-installer]
+        options: [nimbus, voxtype, github-copilot-installer, wowup-cf-installer]
         default: nimbus
         required: true
 
@@ -26,35 +26,37 @@ jobs:
   check:
     name: Check packaging code and spec syntax
     runs-on: ubuntu-latest
-    container: registry.fedoraproject.org/fedora:44
     steps:
-      - run: dnf5 -y install git make just python3 rpm-build rpmdevtools jq systemd systemd-rpm-macros python3-pyyaml
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - run: just check
-        env:
-          GIT_CONFIG_COUNT: 1
-          GIT_CONFIG_KEY_0: safe.directory
-          GIT_CONFIG_VALUE_0: ${{ github.workspace }}
+      - run: docker build -t copr-tools -f build/Containerfile .
+      - name: Run the complete offline gate
+        run: |
+          docker run --rm --network none --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp -e GIT_CONFIG_COUNT=1 \
+            -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/work \
+            -v "$GITHUB_WORKSPACE:/work:ro" copr-tools just check
 
   publish:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    container: registry.fedoraproject.org/fedora:44
     concurrency:
       group: copr-publish-${{ inputs.package }}
       cancel-in-progress: false
     steps:
-      - run: dnf5 -y install git make python3 rpm-build rpmdevtools copr-cli python3-copr systemd-rpm-macros
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Install Voxtype source preparation tools
-        if: inputs.operation == 'build' && inputs.package == 'voxtype'
-        run: dnf5 -y install cargo rust gnupg2
+      - run: docker build -t copr-tools -f build/Containerfile .
+      - name: Compile publication tooling without credentials
+        run: |
+          mkdir -p "$RUNNER_TEMP/copr-tools"
+          docker run --rm --network none --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -v "$GITHUB_WORKSPACE:/work:ro" -v "$RUNNER_TEMP/copr-tools:/tools" \
+            copr-tools go build -o /tools/coprctl ./cmd/coprctl
       - name: Prepare selected source RPM
         if: inputs.operation == 'build'
         shell: bash
@@ -62,15 +64,11 @@ jobs:
           PACKAGE: ${{ inputs.package }}
         run: |
           set -euo pipefail
-          case "$PACKAGE" in
-            nimbus|github-copilot-installer)
-              python3 scripts/srpm.py --spec "packages/$PACKAGE/$PACKAGE.spec" --outdir /tmp/copr-srpm
-              ;;
-            voxtype)
-              python3 packages/voxtype/prepare.py --outdir /tmp/copr-srpm
-              ;;
-            *) exit 1 ;;
-          esac
+          mkdir -p "$RUNNER_TEMP/copr-srpm"
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -v "$GITHUB_WORKSPACE:/work:ro" -v "$RUNNER_TEMP/copr-tools:/tools:ro" \
+            -v "$RUNNER_TEMP/copr-srpm:/output" \
+            copr-tools /tools/coprctl prepare "$PACKAGE" /output
       - name: Create project or submit build
         shell: bash
         env:
@@ -80,13 +78,20 @@ jobs:
           PACKAGE: ${{ inputs.package }}
         run: |
           set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/copr-srpm"
+          arguments=(project "$PACKAGE")
           if [[ "$OPERATION" == project ]]; then
-            python3 scripts/publish.py project --package "$PACKAGE"
+            :
           elif [[ "$OPERATION" == build ]]; then
             shopt -s nullglob
-            packages=(/tmp/copr-srpm/*.src.rpm)
+            packages=("$RUNNER_TEMP"/copr-srpm/*.src.rpm)
             [[ ${#packages[@]} == 1 ]]
-            python3 scripts/publish.py build --package "$PACKAGE" --srpm "${packages[0]}"
+            arguments=(publish "$PACKAGE" "/input/${packages[0]##*/}")
           else
             exit 1
           fi
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+            -e COPR_OWNER -e COPR_CONFIG \
+            -v "$GITHUB_WORKSPACE:/work:ro" -v "$RUNNER_TEMP/copr-tools:/tools:ro" \
+            -v "$RUNNER_TEMP/copr-srpm:/input:ro" \
+            copr-tools /tools/coprctl "${arguments[@]}"
