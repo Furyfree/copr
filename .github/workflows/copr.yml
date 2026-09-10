@@ -1,4 +1,6 @@
 name: COPR
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch' && format('{0} {1}', inputs.operation == 'build' && 'Publish' || 'Project', inputs.package) || format('Check all packages ({0})', github.event_name) }}
 
 on:
   pull_request:
@@ -24,7 +26,7 @@ permissions:
 
 jobs:
   check:
-    name: Check packaging code and spec syntax
+    name: ${{ github.event_name == 'workflow_dispatch' && format('Check {0} and shared tooling', inputs.package) || 'Check all packages' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -32,13 +34,24 @@ jobs:
           persist-credentials: false
       - run: docker build -t copr-tools -f build/Containerfile .
       - name: Run the complete offline gate
+        if: github.event_name != 'workflow_dispatch'
         run: |
           docker run --rm --network none --user "$(id -u):$(id -g)" \
             -e HOME=/tmp -e GIT_CONFIG_COUNT=1 \
             -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/work \
             -v "$GITHUB_WORKSPACE:/work:ro" copr-tools just check
+      - name: Run selected package checks
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          docker run --rm --network none --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp -e GIT_CONFIG_COUNT=1 \
+            -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/work \
+            -v "$GITHUB_WORKSPACE:/work:ro" copr-tools just check-package "$PACKAGE"
 
   publish:
+    name: ${{ format('{0} {1}', inputs.operation == 'build' && 'Publish' || 'Project', inputs.package) }}
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: check
     runs-on: ubuntu-latest

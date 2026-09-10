@@ -1,13 +1,10 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Complete offline gate inside the Fedora build environment.
-check:
-    bash build/check-format.sh
-    shellcheck build/*.sh
+check: _check-style
     go vet ./...
     go test -tags=integration ./...
     go run ./cmd/coprctl verify-specs
-    git diff --check
 
 # Run the complete gate without changing host packages.
 check-container: image
@@ -21,10 +18,25 @@ image:
 test:
     go test ./...
 
-# Native package checks, including helper RPM builds.
-check-package package:
-    COPR_TEST_PACKAGE={{ quote(package) }} go test -tags=integration ./internal/packaging -count=1
-    go run ./cmd/coprctl verify-specs {{ quote(package) }}
+# Shared tooling and one package's tests, spec and native RPM checks.
+check-package package: _check-style
+    #!/usr/bin/env bash
+    set -euo pipefail
+    package={{ quote(package) }}
+    go run ./cmd/coprctl verify-specs "$package"
+    targets=(./cmd/coprctl ./internal/packaging)
+    case "$package" in
+        github-copilot-installer) targets+=(./cmd/github-copilot-installer ./internal/copilot) ;;
+        wowup-cf-installer) targets+=(./cmd/wowup-cf-installer ./internal/wowup) ;;
+    esac
+    go vet "${targets[@]}"
+    COPR_TEST_PACKAGE="$package" go test -tags=integration "${targets[@]}" -count=1
+
+[private]
+_check-style:
+    bash build/check-format.sh
+    shellcheck build/*.sh
+    git diff --check
 
 # Prepare one source RPM; only source preparation may access the network.
 prepare package outdir:

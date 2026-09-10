@@ -92,3 +92,46 @@ func TestWorkflowPackageRouting(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkflowCheckRouting(t *testing.T) {
+	root := repository(t)
+	data, err := os.ReadFile(filepath.Join(root, ".github/workflows/copr.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := string(data)
+	for _, tc := range []struct{ step, condition, suffix string }{
+		{"Run the complete offline gate", "github.event_name != 'workflow_dispatch'", "just\ncheck\n"},
+		{"Run selected package checks", "github.event_name == 'workflow_dispatch'", "just\ncheck-package\nvoxtype\n"},
+	} {
+		t.Run(tc.step, func(t *testing.T) {
+			_, step, ok := strings.Cut(workflow, "      - name: "+tc.step+"\n")
+			if !ok {
+				t.Fatal("missing check step")
+			}
+			step, _, _ = strings.Cut(step, "\n      - ")
+			step, _, _ = strings.Cut(step, "\n  publish:")
+			if !strings.HasPrefix(step, "        if: "+tc.condition+"\n") {
+				t.Fatal("check runs for the wrong event")
+			}
+			_, script, ok := strings.Cut(step, "        run: |\n")
+			if !ok {
+				t.Fatal("missing check script")
+			}
+			bin := t.TempDir()
+			write(t, filepath.Join(bin, "docker"), "#!/bin/sh\nprintf '%s\\n' \"$@\"\n")
+			if err := os.Chmod(filepath.Join(bin, "docker"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.CommandContext(t.Context(), "bash", "-euo", "pipefail", "-c", script)
+			cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "GITHUB_WORKSPACE="+root, "PACKAGE=voxtype")
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("check script: %s %v", output, err)
+			}
+			if !strings.HasSuffix(string(output), tc.suffix) || !strings.Contains(string(output), "--network\nnone\n") || !strings.Contains(string(output), root+":/work:ro\n") {
+				t.Fatalf("wrong check invocation: %s", output)
+			}
+		})
+	}
+}

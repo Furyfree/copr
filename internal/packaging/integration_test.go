@@ -266,3 +266,42 @@ func TestVoxtypeFedoraPreset(t *testing.T) {
 		t.Fatalf("preset state %q: %v", data, err)
 	}
 }
+
+func TestNativeCheckPackageScope(t *testing.T) {
+	for _, tc := range []struct{ name, targets string }{
+		{"nimbus", "./cmd/coprctl ./internal/packaging"},
+		{"voxtype", "./cmd/coprctl ./internal/packaging"},
+		{"github-copilot-installer", "./cmd/coprctl ./internal/packaging ./cmd/github-copilot-installer ./internal/copilot"},
+		{"wowup-cf-installer", "./cmd/coprctl ./internal/packaging ./cmd/wowup-cf-installer ./internal/wowup"},
+		{"", "./..."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			bin := filepath.Join(root, "bin")
+			log := filepath.Join(root, "commands")
+			write(t, filepath.Join(bin, "go"), "#!/bin/sh\nprintf '%s|%s\\n' \"${COPR_TEST_PACKAGE-}\" \"$*\" >> \"$COMMAND_LOG\"\n")
+			if err := os.Chmod(filepath.Join(bin, "go"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			args := []string{"check"}
+			want := []string{"|vet ./...", "|test -tags=integration ./...", "|run ./cmd/coprctl verify-specs"}
+			if tc.name != "" {
+				args = []string{"check-package", tc.name}
+				want = []string{"|run ./cmd/coprctl verify-specs " + tc.name, "|vet " + tc.targets, tc.name + "|test -tags=integration " + tc.targets + " -count=1"}
+			}
+			cmd := exec.CommandContext(t.Context(), "just", args...)
+			cmd.Dir = repository(t)
+			cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "COMMAND_LOG="+log, "COPR_TEST_PACKAGE=")
+			if output, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("just %v: %s %v", args, output, err)
+			}
+			data, err := os.ReadFile(log)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(data) != strings.Join(want, "\n")+"\n" {
+				t.Fatalf("wrong scope:\n%s\nwant: %v", data, want)
+			}
+		})
+	}
+}

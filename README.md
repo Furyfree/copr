@@ -42,4 +42,4 @@ Use `just project voxtype` only to create/verify the project without a build.
 
 Replace `voxtype` with any package listed above. Publishing requires an
 authenticated GitHub CLI and uses remote `main`. Pushes and pull requests run
-checks only; publication is manual.
+full checks only; publication is manual and checks shared tooling plus the selected package.
