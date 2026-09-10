@@ -1,0 +1,17 @@
+[projects.nimbus]
+name = "nimbus"
+chroots = ["fedora-44-x86_64"]
+description = "Nimbus personal Fedora workstation installer and system manager"
+homepage = "https://github.com/Furyfree/nimbus"
+
+[projects.voxtype]
+name = "voxtype"
+chroots = ["fedora-44-x86_64"]
+description = "Voxtype push-to-talk voice transcription for Wayland"
+homepage = "https://github.com/peteonrails/voxtype"
+
+[projects.github-copilot-installer]
+name = "github-copilot-installer"
+chroots = ["fedora-44-x86_64"]
+description = "MIT installer helper for the official GitHub Copilot app; no app payload included"
+homepage = "https://github.com/Furyfree/copr"

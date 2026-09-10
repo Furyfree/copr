@@ -7,10 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Create the project, or build and publish Nimbus
+        description: Create the selected project, or build and publish its package
         type: choice
         options: [project, build]
         default: project
+        required: true
+      package:
+        description: Package to publish independently
+        type: choice
+        options: [nimbus, voxtype, github-copilot-installer]
+        default: nimbus
         required: true
 
 permissions:
@@ -22,11 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     container: registry.fedoraproject.org/fedora:44
     steps:
-      - run: dnf5 -y install git make python3 rpm-build rpmdevtools
+      - run: dnf5 -y install git make just python3 rpm-build rpmdevtools jq systemd systemd-rpm-macros python3-pyyaml
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - run: make check
+      - run: just check
         env:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: safe.directory
@@ -39,31 +45,48 @@ jobs:
     timeout-minutes: 360
     container: registry.fedoraproject.org/fedora:44
     concurrency:
-      group: copr-publish
+      group: copr-publish-${{ inputs.package }}
       cancel-in-progress: false
     steps:
-      - run: dnf5 -y install git make python3 rpm-build rpmdevtools copr-cli python3-copr
+      - run: dnf5 -y install git make python3 rpm-build rpmdevtools copr-cli python3-copr systemd-rpm-macros
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Prepare Nimbus source RPM
+      - name: Install Voxtype source preparation tools
+        if: inputs.operation == 'build' && inputs.package == 'voxtype'
+        run: dnf5 -y install cargo rust gnupg2
+      - name: Prepare selected source RPM
         if: inputs.operation == 'build'
-        run: python3 scripts/srpm.py --spec packages/nimbus/nimbus.spec --outdir /tmp/nimbus-srpm
+        shell: bash
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+          case "$PACKAGE" in
+            nimbus|github-copilot-installer)
+              python3 scripts/srpm.py --spec "packages/$PACKAGE/$PACKAGE.spec" --outdir /tmp/copr-srpm
+              ;;
+            voxtype)
+              python3 packages/voxtype/prepare.py --outdir /tmp/copr-srpm
+              ;;
+            *) exit 1 ;;
+          esac
       - name: Create project or submit build
         shell: bash
         env:
           COPR_OWNER: ${{ vars.COPR_OWNER }}
           COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
           OPERATION: ${{ inputs.operation }}
+          PACKAGE: ${{ inputs.package }}
         run: |
           set -euo pipefail
           if [[ "$OPERATION" == project ]]; then
-            python3 scripts/publish.py project
+            python3 scripts/publish.py project --package "$PACKAGE"
           elif [[ "$OPERATION" == build ]]; then
             shopt -s nullglob
-            packages=(/tmp/nimbus-srpm/*.src.rpm)
+            packages=(/tmp/copr-srpm/*.src.rpm)
             [[ ${#packages[@]} == 1 ]]
-            python3 scripts/publish.py build --srpm "${packages[0]}"
+            python3 scripts/publish.py build --package "$PACKAGE" --srpm "${packages[0]}"
           else
             exit 1
           fi

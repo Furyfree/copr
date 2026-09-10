@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create the configured COPR project or submit one prepared SRPM."""
+"""Create one selected COPR project or submit its prepared SRPM."""
 
 import argparse
 import configparser
@@ -14,9 +14,16 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def publish(action, srpm=None):
-    with (ROOT / ".copr/project.toml").open("rb") as stream:
-        project = tomllib.load(stream)["project"]
+def publish(action, package, srpm=None):
+    if action not in {"project", "build"}:
+        raise ValueError("unknown COPR operation")
+    with (ROOT / ".copr/projects.toml").open("rb") as stream:
+        projects = tomllib.load(stream)["projects"]
+    if package not in projects:
+        raise ValueError("package must select a configured COPR project")
+    project = projects[package]
+    if action == "project" and srpm is not None:
+        raise ValueError("project creation does not accept an SRPM")
     owner = os.environ.get("COPR_OWNER", "")
     if not re.fullmatch(r"[a-z][a-z0-9_-]*", owner):
         raise ValueError("COPR_OWNER must be the Fedora account name")
@@ -31,9 +38,18 @@ def publish(action, srpm=None):
         raise ValueError("COPR_CONFIG must select the official Fedora COPR service")
     if not account.get("login") or not account.get("token"):
         raise ValueError("COPR_CONFIG requires login and token")
-    if action == "build" and (not srpm or not Path(srpm).is_file()
-                              or not str(srpm).endswith(".src.rpm")):
-        raise ValueError("build requires an existing .src.rpm file")
+    environment = os.environ.copy()
+    environment.pop("COPR_CONFIG", None)
+    if action == "build":
+        if (not srpm or not Path(srpm).is_file() or Path(srpm).is_symlink()
+                or not str(srpm).endswith(".src.rpm")):
+            raise ValueError("build requires a regular .src.rpm file")
+        identity = subprocess.run(
+            ["rpm", "-qp", "--qf", "%{NAME}\n%{SOURCEPACKAGE}\n", str(Path(srpm).resolve())],
+            check=True, text=True, capture_output=True,
+            env=environment).stdout.splitlines()
+        if identity != [package, "1"]:
+            raise ValueError("SRPM identity does not match the selected package")
     from copr.v3 import Client
 
     # Keep credentials out of argv, logs, and the checked-out source tree.
@@ -61,18 +77,18 @@ def publish(action, srpm=None):
             for chroot in project["chroots"]:
                 command += ["--chroot", chroot]
             command += [f"{owner}/{project['name']}", str(Path(srpm).resolve())]
-            environment = os.environ.copy()
-            environment.pop("COPR_CONFIG", None)
             subprocess.run(command, check=True, env=environment)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=["project", "build"])
+    parser.add_argument("--package", required=True,
+                        choices=["nimbus", "voxtype", "github-copilot-installer"])
     parser.add_argument("--srpm")
     args = parser.parse_args()
     try:
-        publish(args.action, args.srpm)
+        publish(args.action, args.package, args.srpm)
     except Exception:
         # Client exception text may contain authentication details.
         parser.exit(1, "COPR operation failed; check account settings and the build output.\n")

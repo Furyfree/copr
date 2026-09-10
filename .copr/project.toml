@@ -1,5 +1,0 @@
-[project]
-name = "nimbus"
-chroots = ["fedora-44-x86_64"]
-description = "Nimbus personal Fedora workstation installer and system manager"
-homepage = "https://github.com/Furyfree/nimbus"

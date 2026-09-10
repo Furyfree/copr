@@ -1,11 +1,14 @@
 # COPR packaging
 
-Packaging recipes for the owner's Fedora COPR projects. Application source
-stays upstream; each recipe lives in `packages/<name>/<name>.spec`.
+Packaging recipes for the owner's Fedora COPR projects. Each recipe lives in
+`packages/<name>/<name>.spec`. Application source stays upstream; the Copilot
+installer helper is maintained locally alongside its recipe.
 
 | Package | Target | Status |
 | --- | --- | --- |
 | [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | [0.2.3 recipe; manual builds](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/builds/) |
+| [Voxtype](packages/voxtype/README.md) | Fedora 44, x86_64 | Local 1.0.1 CPU candidate; not published |
+| [GitHub Copilot installer](packages/github-copilot-installer/README.md) | Fedora 44, x86_64 | Local 0.1.2 MIT helper candidate; app downloaded separately |
 
 ## Account setup
 
@@ -26,29 +29,68 @@ on exit. Rotate the secret when its token expires.
 
 Pull requests and pushes to `main` run **Check packaging code and spec syntax**
 without COPR credentials. This covers regressions, a real fixture SRPM build,
-and Nimbus spec parsing. The actual Nimbus binary build is a separate manual
-COPR operation.
+and all package spec parsing. COPR binary builds are separate manual
+operations, one selected package per run.
 
-Open Actions > COPR > Run workflow on `main` and select `project` to create
-the configured project if absent, or verify the required chroots. Existing settings and packages are preserved.
+After these changes are merged to `main`, open Actions > COPR > Run workflow
+and select one `package` and an `operation`:
 
-The `build` operation prepares Nimbus's source RPM from the source asset of
-its published upstream release, creates/verifies the project, and submits that
-exact archive. The native client waits and reports failures. Before a new
-version, publish its reviewed Nimbus release and update the spec's `Version`;
-then dispatch `build` manually. Pushing either repository does not release or
-submit a package.
+| Package selection | COPR project | Source preparation |
+| --- | --- | --- |
+| `nimbus` | `<owner>/nimbus` | Published, checksum-pinned Nimbus release |
+| `voxtype` | `<owner>/voxtype` | Signed upstream release and locked Cargo vendoring |
+| `github-copilot-installer` | `<owner>/github-copilot-installer` | Local MIT helper source from the selected `main` commit |
 
-Publishing runs are serialized. Pull requests, ordinary pushes, and dispatches
-from other branches cannot run the publish job. The `furyfree/nimbus` project
-has been created through the manual `project` operation. There are no automatic rebuild webhooks or deletion calls.
+Choose `project` to create or verify only that project's Fedora 44 x86_64
+configuration. Choose `build` to prepare and upload only that package's SRPM;
+it also creates/verifies the project, so a separate `project` run is optional.
+The native client waits for the result and reports build failures. The
+publisher rejects an SRPM whose native package name differs from the selection.
 
-Project settings are in [.copr/project.toml](.copr/project.toml). Binary builds
-use Fedora 44 x86_64 with network access disabled. Source preparation downloads
-declared HTTPS sources; it uses temporary storage and leaves the recipe alone.
-An SRPM upload supplies COPR with its sources, so COPR does not need a GitHub
-credential to clone this packaging repository. Uploads publish their contents;
-use only approved release sources.
+With GitHub CLI authenticated, use the Just recipes:
+
+~~~sh
+just publish voxtype
+just publish github-copilot-installer
+just publish nimbus
+just project voxtype
+~~~
+
+A package selection is required. These commands dispatch remote `main`, so
+merge reviewed package changes first. `publish` selects `operation=build`;
+`project` creates/verifies the selected COPR project without building.
+
+The equivalent direct GitHub CLI command for Voxtype is:
+
+~~~sh
+gh workflow run copr.yml --repo Furyfree/copr --ref main \
+  -f operation=build -f package=voxtype
+~~~
+
+Use `package=nimbus` or `package=github-copilot-installer` for the other
+packages. Each project has its own signing key; verify the resulting key and
+signed RPM before adding a new project to Nimbus. The Copilot project ships
+only the installer helper, not the proprietary app. Package readiness and
+real installation tests remain described in each package's README.
+
+Runs for the same package are serialized; different packages can publish
+independently. Pull requests, ordinary pushes, and dispatches from other
+branches cannot publish. There are no automatic rebuild webhooks or deletion
+calls. Creating/building one project never changes another project's settings.
+The existing `furyfree/nimbus` project and its key remain in use.
+
+Project settings are in [.copr/projects.toml](.copr/projects.toml). Binary
+builds use Fedora 44 x86_64 with networking disabled. Source preparation runs
+without COPR credentials and may download declared HTTPS sources. Credentials
+are exposed only to the final project/upload step. An SRPM supplies COPR with
+its sources, so COPR needs no GitHub credential to clone this repository.
+Uploads publish their contents; use only reviewed sources.
+
+Before a new version, update that package's version, release, and source
+verification data as applicable. Nimbus needs its upstream release published
+first. Voxtype verifies its upstream signature and checksum before vendoring.
+The helper is maintained here; update its source and version together.
+Pushing a change alone never publishes a package.
 
 ## Local checks and source RPMs
 
@@ -58,10 +100,10 @@ network access or changes to host package configuration:
 ~~~sh
 docker build -t furyfree-copr-tools -f tools/Dockerfile .
 docker run --rm --network none --user "$(id -u):$(id -g)" \
-  -e HOME=/tmp -v "$PWD:/work:ro" furyfree-copr-tools make check
+  -e HOME=/tmp -v "$PWD:/work:ro" furyfree-copr-tools just check
 ~~~
 
-With the RPM tools already available, `make check` runs the same gate. To build
+With Just and the RPM tools available, `just check` runs the same gate. To build
 a source RPM after supplying the package's declared sources:
 
 ~~~sh

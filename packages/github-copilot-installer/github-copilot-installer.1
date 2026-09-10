@@ -1,0 +1,58 @@
+.TH GITHUB-COPILOT-INSTALLER 1 "September 2026" "github-copilot-installer 0.1.2" "User Commands"
+.SH NAME
+github-copilot-installer \- install GitHub's official GitHub Copilot RPM on Fedora
+.SH SYNOPSIS
+.B github-copilot-installer
+.I command
+.RI [ options ]
+.SH DESCRIPTION
+.B github-copilot-installer
+retrieves release metadata from GitHub, downloads the official GitHub Copilot
+RPM, verifies its published SHA-256 digest and package identity, and delegates
+installation or updates to DNF.
+.PP
+The GitHub Copilot application is proprietary and is not contained in the
+installer package or its COPR repository.
+.SH COMMANDS
+.TP
+.B install
+Install the latest selected GitHub Copilot release.
+.TP
+.B update
+Update an existing recognized GitHub Copilot installation.
+.TP
+.B status
+Show the helper and installed application versions, without network access
+or temporary files.
+.TP
+.B uninstall
+Remove the upstream application package while retaining user data.
+.TP
+.B version
+Print the helper version.
+.TP
+.B help
+Print command usage.
+.SH OPTIONS
+.TP
+.BI \-\-app\-version " VERSION"
+Select an explicit GitHub Copilot release instead of the latest release.
+Valid only with install and update.
+.TP
+.BR \-\-assumeyes ", " \-y
+Pass automatic yes confirmation to DNF. Valid only for mutating commands.
+.SH FILES
+.TP
+.I ~/.copilot
+Upstream application data. This helper never removes or modifies it.
+.SH EXAMPLES
+.nf
+sudo github-copilot-installer install
+github-copilot-installer status
+sudo github-copilot-installer update --assumeyes
+sudo github-copilot-installer uninstall
+.fi
+.SH SECURITY
+The upstream RPM is unsigned. Installation therefore requires the SHA-256
+digest published by the official GitHub release API and an exact official
+release URL.

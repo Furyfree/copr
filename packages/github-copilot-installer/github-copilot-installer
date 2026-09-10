@@ -1,0 +1,403 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly PROGRAM_NAME="github-copilot-installer"
+readonly HELPER_VERSION="0.1.2"
+readonly GITHUB_API_ROOT="https://api.github.com/repos/github/app"
+readonly ASSET_NAME="GitHub-Copilot-linux-x64.rpm"
+readonly EXPECTED_PACKAGE_NAME="github"
+readonly EXPECTED_PACKAGE_ARCH="x86_64"
+readonly EXPECTED_PACKAGE_LICENSE="Proprietary"
+readonly EXPECTED_PACKAGE_SUMMARY="Tauri Copilot Application"
+
+command_name=""
+requested_version=""
+assume_yes=false
+temporary_directory=""
+
+usage() {
+    cat <<'EOF'
+Usage:
+  github-copilot-installer install [--app-version VERSION] [--assumeyes]
+  github-copilot-installer update [--app-version VERSION] [--assumeyes]
+  github-copilot-installer status
+  github-copilot-installer uninstall [--assumeyes]
+  github-copilot-installer version
+  github-copilot-installer help
+
+The install and update commands download GitHub's official RPM, verify its
+published SHA-256 digest and package identity, then delegate to DNF.
+EOF
+}
+
+die() {
+    printf 'error: %s\n' "$*" >&2
+    exit 1
+}
+
+cleanup() {
+    if [[ -n "$temporary_directory" && -d "$temporary_directory" ]]; then
+        rm -rf -- "$temporary_directory"
+    fi
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "required command is unavailable: $1"
+}
+
+parse_arguments() {
+    while (($# > 0)); do
+        case "$1" in
+            install | update | status | uninstall | version | help)
+                [[ -z "$command_name" ]] || die "only one command may be specified"
+                command_name="$1"
+                ;;
+            --app-version)
+                shift
+                (($# > 0)) || die "--app-version requires a value"
+                requested_version="$1"
+                ;;
+            --assumeyes | -y)
+                assume_yes=true
+                ;;
+            --help | -h)
+                command_name="help"
+                ;;
+            --)
+                shift
+                (($# == 0)) || die "positional arguments are not supported"
+                break
+                ;;
+            -*)
+                die "unknown option: $1"
+                ;;
+            *)
+                die "unknown command or argument: $1"
+                ;;
+        esac
+        shift
+    done
+
+    [[ -n "$command_name" ]] || command_name="help"
+
+    if [[ -n "$requested_version" ]] &&
+        [[ ! "$requested_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([._+-][A-Za-z0-9]+)*$ ]]; then
+        die "invalid application version: $requested_version"
+    fi
+
+    case "$command_name" in
+        install | update) ;;
+        status)
+            [[ -z "$requested_version" ]] ||
+                die "--app-version is not valid with status"
+            if $assume_yes; then
+                die "--assumeyes is not valid with status"
+            fi
+            ;;
+        uninstall)
+            [[ -z "$requested_version" ]] ||
+                die "--app-version is not valid with uninstall"
+            ;;
+        version | help)
+            [[ -z "$requested_version" ]] ||
+                die "--app-version is not valid with $command_name"
+            if $assume_yes; then
+                die "--assumeyes is not valid with $command_name"
+            fi
+            ;;
+    esac
+}
+
+validate_platform() {
+    local os_id=""
+    local os_version=""
+    local architecture=""
+
+    [[ -r /etc/os-release ]] || die "cannot identify this operating system"
+    # Fedora owns this file; sourcing it preserves quoted os-release values.
+    # shellcheck source=/dev/null
+    source /etc/os-release
+    os_id="${ID:-}"
+    os_version="${VERSION_ID:-}"
+    architecture="$(uname -m)"
+
+    [[ "$os_id" == "fedora" ]] ||
+        die "unsupported operating system: ${os_id:-unknown}; Fedora is required"
+    case "$os_version" in
+        43 | 44) ;;
+        *)
+            die "unsupported Fedora release: ${os_version:-unknown}; Fedora 43 or 44 is required"
+            ;;
+    esac
+    [[ "$architecture" == "$EXPECTED_PACKAGE_ARCH" ]] ||
+        die "unsupported architecture: $architecture; x86_64 is required"
+}
+
+require_root() {
+    [[ "$(id -u)" == "0" ]] ||
+        die "this command changes system packages; run it with sudo"
+}
+
+create_temporary_directory() {
+    temporary_directory="$(mktemp -d -t github-copilot-installer.XXXXXXXX)"
+}
+
+fetch_release_metadata() {
+    local metadata_file="$1"
+    local api_url=""
+
+    if [[ -n "$requested_version" ]]; then
+        api_url="$GITHUB_API_ROOT/releases/tags/v${requested_version}"
+    else
+        api_url="$GITHUB_API_ROOT/releases/latest"
+    fi
+
+    curl \
+        --fail \
+        --location \
+        --proto '=https' \
+        --proto-redir '=https' \
+        --retry 3 \
+        --show-error \
+        --silent \
+        --output "$metadata_file" \
+        "$api_url"
+}
+
+parse_release_metadata() {
+    local metadata_file="$1"
+    local asset_count=""
+    local tag_name=""
+    local digest=""
+    local expected_url=""
+
+    tag_name="$(jq -er '.tag_name | strings' "$metadata_file")" ||
+        die "release metadata does not contain a valid tag"
+    [[ "$tag_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+([._+-][A-Za-z0-9]+)*)$ ]] ||
+        die "release tag has an unexpected format: $tag_name"
+    release_version="${tag_name#v}"
+
+    if [[ -n "$requested_version" && "$release_version" != "$requested_version" ]]; then
+        die "release metadata returned $release_version instead of $requested_version"
+    fi
+
+    asset_count="$(
+        jq -er --arg asset "$ASSET_NAME" \
+            '[.assets[]? | select(.name == $asset)] | length' "$metadata_file"
+    )" || die "release metadata does not contain an assets list"
+    [[ "$asset_count" == "1" ]] ||
+        die "release metadata must contain exactly one $ASSET_NAME asset"
+
+    release_url="$(
+        jq -er --arg asset "$ASSET_NAME" \
+            '.assets[] | select(.name == $asset) | .browser_download_url | strings' \
+            "$metadata_file"
+    )" || die "release asset is missing its download URL"
+    expected_url="https://github.com/github/app/releases/download/${tag_name}/${ASSET_NAME}"
+    [[ "$release_url" == "$expected_url" ]] ||
+        die "release asset URL is not the expected official GitHub URL"
+
+    digest="$(
+        jq -er --arg asset "$ASSET_NAME" \
+            '.assets[] | select(.name == $asset) | .digest | strings' \
+            "$metadata_file"
+    )" || die "release asset is missing its digest"
+    digest="${digest,,}"
+    [[ "$digest" =~ ^sha256:([0-9a-f]{64})$ ]] ||
+        die "release asset has an invalid SHA-256 digest"
+    release_sha256="${digest#sha256:}"
+}
+
+resolve_release() {
+    local metadata_file="$temporary_directory/release.json"
+
+    require_command curl
+    require_command jq
+    fetch_release_metadata "$metadata_file"
+    parse_release_metadata "$metadata_file"
+}
+
+download_and_verify_rpm() {
+    local rpm_file="$temporary_directory/$ASSET_NAME"
+    local metadata=""
+    local package_name=""
+    local package_version=""
+    local package_release=""
+    local package_arch=""
+    local package_license=""
+    local package_summary=""
+
+    require_command sha256sum
+    require_command rpm
+
+    curl \
+        --fail \
+        --location \
+        --proto '=https' \
+        --proto-redir '=https' \
+        --retry 3 \
+        --show-error \
+        --silent \
+        --output "$rpm_file" \
+        "$release_url"
+
+    printf '%s  %s\n' "$release_sha256" "$rpm_file" | sha256sum --check --status - ||
+        die "downloaded RPM does not match GitHub's SHA-256 digest"
+    rpm --checksig --nosignature "$rpm_file" >/dev/null ||
+        die "downloaded RPM failed its internal digest checks"
+
+    metadata="$(
+        rpm -qp --queryformat \
+            '%{NAME}\t%{VERSION}\t%{RELEASE}\t%{ARCH}\t%{LICENSE}\t%{SUMMARY}\n' \
+            "$rpm_file"
+    )" || die "downloaded asset is not a readable RPM"
+    IFS=$'\t' read -r package_name package_version package_release package_arch \
+        package_license package_summary <<<"$metadata"
+
+    [[ "$package_name" == "$EXPECTED_PACKAGE_NAME" ]] ||
+        die "unexpected RPM package name: $package_name"
+    [[ "$package_version" == "$release_version" ]] ||
+        die "RPM version $package_version does not match release $release_version"
+    [[ -n "$package_release" ]] || die "RPM release field is empty"
+    [[ "$package_arch" == "$EXPECTED_PACKAGE_ARCH" ]] ||
+        die "unexpected RPM architecture: $package_arch"
+    [[ "$package_license" == "$EXPECTED_PACKAGE_LICENSE" ]] ||
+        die "unexpected RPM license: $package_license"
+    [[ "$package_summary" == "$EXPECTED_PACKAGE_SUMMARY" ]] ||
+        die "unexpected RPM summary: $package_summary"
+
+    verified_rpm="$rpm_file"
+}
+
+installed_package_metadata() {
+    rpm -q --queryformat \
+        '%{NAME}\t%{VERSION}\t%{RELEASE}\t%{ARCH}\t%{LICENSE}\t%{SUMMARY}\n' \
+        "$EXPECTED_PACKAGE_NAME" 2>/dev/null
+}
+
+validate_installed_package() {
+    local metadata=""
+    local package_name=""
+    local package_version=""
+    local package_release=""
+    local package_arch=""
+    local package_license=""
+    local package_summary=""
+
+    if ! metadata="$(installed_package_metadata)"; then
+        return 1
+    fi
+    IFS=$'\t' read -r package_name package_version package_release package_arch \
+        package_license package_summary <<<"$metadata"
+
+    [[ "$package_name" == "$EXPECTED_PACKAGE_NAME" &&
+        "$package_arch" == "$EXPECTED_PACKAGE_ARCH" &&
+        "$package_license" == "$EXPECTED_PACKAGE_LICENSE" &&
+        "$package_summary" == "$EXPECTED_PACKAGE_SUMMARY" ]] ||
+        die "an unrelated or unrecognized package named github is installed"
+    installed_version="$package_version"
+    installed_release="$package_release"
+}
+
+run_dnf() {
+    local operation="$1"
+    local -a command=(dnf)
+
+    $assume_yes && command+=(-y)
+    command+=("$operation")
+    shift
+    command+=("$@")
+
+    "${command[@]}"
+}
+
+install_or_update() {
+    local mode="$1"
+
+    validate_platform
+    require_root
+    require_command dnf
+    require_command mktemp
+    create_temporary_directory
+
+    if [[ "$mode" == "update" ]]; then
+        validate_installed_package ||
+            die "GitHub Copilot is not installed; use the install command"
+    elif installed_package_metadata >/dev/null; then
+        validate_installed_package
+    fi
+
+    resolve_release
+    download_and_verify_rpm
+    run_dnf install "$verified_rpm"
+
+    validate_installed_package ||
+        die "DNF completed but the GitHub Copilot package is not installed"
+    [[ "$installed_version" == "$release_version" ]] ||
+        die "installed version $installed_version does not match selected version $release_version"
+
+    printf 'GitHub Copilot %s-%s is installed.\n' \
+        "$installed_version" "$installed_release"
+}
+
+show_status() {
+    local installed="not installed"
+
+    validate_platform
+    require_command rpm
+
+    if validate_installed_package; then
+        installed="${installed_version}-${installed_release}"
+    fi
+
+    printf 'Installer: %s\n' "$HELPER_VERSION"
+    printf 'Installed GitHub Copilot: %s\n' "$installed"
+}
+
+uninstall_application() {
+    validate_platform
+    require_root
+    require_command dnf
+    require_command rpm
+
+    if ! validate_installed_package; then
+        printf 'GitHub Copilot is not installed.\n'
+        return 0
+    fi
+
+    run_dnf remove "$EXPECTED_PACKAGE_NAME"
+    if installed_package_metadata >/dev/null; then
+        die "DNF completed but the GitHub Copilot package is still installed"
+    fi
+    printf 'GitHub Copilot was removed. User data in ~/.copilot was retained.\n'
+}
+
+main() {
+    parse_arguments "$@"
+
+    case "$command_name" in
+        install | update)
+            install_or_update "$command_name"
+            ;;
+        status)
+            show_status
+            ;;
+        uninstall)
+            uninstall_application
+            ;;
+        version)
+            printf '%s %s\n' "$PROGRAM_NAME" "$HELPER_VERSION"
+            ;;
+        help)
+            usage
+            ;;
+    esac
+}
+
+main "$@"

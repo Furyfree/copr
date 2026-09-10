@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -137,6 +138,65 @@ class NimbusSource(unittest.TestCase):
                                          "approved source\n")
 
 
+@unittest.skipUnless(all(shutil.which(tool) for tool in
+                         ["rpmbuild", "rpmspec", "spectool", "jq", "cpio"]),
+                     "requires Fedora RPM tools and jq; run the container gate")
+class CopilotInstaller(unittest.TestCase):
+    def test_local_sources_build_and_ship_only_the_helper(self):
+        recipe = (ROOT / "packages/github-copilot-installer/"
+                  "github-copilot-installer.spec")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_rpm = srpm.build(recipe, root / "sources")
+            identity = subprocess.check_output(
+                ["rpm", "-qp", "--qf", "%{NAME}\n%{SOURCEPACKAGE}\n", str(source_rpm)],
+                text=True)
+            self.assertEqual(identity, "github-copilot-installer\n1\n")
+            contents = subprocess.check_output(
+                ["rpm", "-qpl", str(source_rpm)], text=True).splitlines()
+            self.assertEqual(set(contents), {
+                "github-copilot-installer.spec", "github-copilot-installer",
+                "github-copilot-installer.1", "LICENSE", "README.md",
+                "test-installer.sh",
+            })
+            result = subprocess.run(
+                ["rpmbuild", "--rebuild", str(source_rpm),
+                 "--define", f"_topdir {root / 'build'}"],
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("installer tests", result.stdout)
+            packages = list((root / "build/RPMS/noarch").glob("*.rpm"))
+            self.assertEqual(len(packages), 1)
+            package = str(packages[0])
+            files = subprocess.check_output(
+                ["rpm", "-qpl", package], text=True).splitlines()
+            self.assertEqual(set(files), {
+                "/usr/bin/github-copilot-installer",
+                "/usr/share/doc/github-copilot-installer",
+                "/usr/share/doc/github-copilot-installer/README.md",
+                "/usr/share/licenses/github-copilot-installer",
+                "/usr/share/licenses/github-copilot-installer/LICENSE",
+                "/usr/share/man/man1/github-copilot-installer.1.gz",
+            })
+            for option in ["--scripts", "--triggers"]:
+                self.assertEqual(subprocess.check_output(
+                    ["rpm", "-qp", option, package], text=True), "")
+            payload = subprocess.check_output(["rpm2cpio", package])
+            extracted = root / "extracted"
+            extracted.mkdir()
+            subprocess.run(["cpio", "-idm", "--quiet"], input=payload,
+                           cwd=extracted, check=True)
+            notice = (extracted / "usr/share/licenses/"
+                      "github-copilot-installer/LICENSE").read_text()
+            self.assertIn("Copyright (c) 2026 Chris Titus Tech", notice)
+            version = subprocess.check_output(
+                ["rpm", "-qp", "--qf", "%{VERSION}", package], text=True)
+            helper = extracted / "usr/bin/github-copilot-installer"
+            self.assertEqual(subprocess.check_output([str(helper), "version"],
+                                                     text=True).strip(),
+                             f"github-copilot-installer {version}")
+
+
 class Publishing(unittest.TestCase):
     def setUp(self):
         self.client = Mock()
@@ -166,12 +226,12 @@ class Publishing(unittest.TestCase):
     def test_account_validation_precedes_project_mutation(self):
         with patch.dict(os.environ, {"COPR_OWNER": "someoneelse"}):
             with self.assertRaises(ValueError):
-                publisher.publish("project")
+                publisher.publish("project", "nimbus")
         self.client.project_proxy.add.assert_not_called()
         self.assertEqual(self.config_paths, [])
 
     def test_project_creation_preserves_existing_settings_and_removes_credentials(self):
-        publisher.publish("project")
+        publisher.publish("project", "nimbus")
         options = self.client.project_proxy.add.call_args.kwargs
         self.assertTrue(options["exist_ok"])
         self.assertFalse(options["enable_net"])
@@ -183,7 +243,7 @@ class Publishing(unittest.TestCase):
     def test_missing_chroot_blocks_build_and_removes_credentials(self):
         self.client.project_proxy.get.return_value = SimpleNamespace(chroot_repos={})
         with self.assertRaises(ValueError):
-            publisher.publish("project")
+            publisher.publish("project", "nimbus")
         self.assertFalse(self.config_paths[0].exists())
 
     def test_native_build_waits_and_propagates_failure_without_secret_environment(self):
@@ -192,6 +252,9 @@ class Publishing(unittest.TestCase):
             archive.write_bytes(b"fixture")
 
             def fail(command, **kwargs):
+                self.assertNotIn("COPR_CONFIG", kwargs["env"])
+                if command[0] == "rpm":
+                    return subprocess.CompletedProcess(command, 0, "nimbus\n1\n")
                 self.assertNotIn("--nowait", command)
                 self.assertEqual(command[-1], str(archive))
                 self.assertEqual(command[command.index("--enable-net") + 1], "off")
@@ -202,8 +265,58 @@ class Publishing(unittest.TestCase):
 
             with patch.object(publisher.subprocess, "run", side_effect=fail):
                 with self.assertRaises(subprocess.CalledProcessError):
-                    publisher.publish("build", archive)
+                    publisher.publish("build", "nimbus", archive)
             self.assertFalse(self.config_paths[0].exists())
+
+    def test_each_package_targets_only_its_own_project(self):
+        with (ROOT / ".copr/projects.toml").open("rb") as stream:
+            projects = tomllib.load(stream)["projects"]
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "candidate.src.rpm"
+            archive.write_bytes(b"fixture")
+            for package, project in projects.items():
+                with self.subTest(package=package):
+                    self.client.reset_mock()
+                    with patch.object(publisher.subprocess, "run") as run:
+                        run.return_value.stdout = f"{package}\n1\n"
+                        publisher.publish("build", package, archive)
+                    self.assertEqual(run.call_count, 2)
+                    command = run.call_args.args[0]
+                    self.assertEqual(command[-2:],
+                                     [f"owner/{project['name']}", str(archive)])
+                    self.assertEqual(command[command.index("--chroot") + 1],
+                                     "fedora-44-x86_64")
+                    self.assertEqual(command[command.index("--enable-net") + 1], "off")
+                    self.client.project_proxy.add.assert_called_once()
+                    self.assertEqual(self.client.project_proxy.add.call_args.kwargs[
+                        "projectname"], project["name"])
+                    self.client.project_proxy.get.assert_called_once_with(
+                        "owner", project["name"])
+                    self.client.project_proxy.edit.assert_not_called()
+
+    def test_invalid_selection_and_wrong_srpm_never_mutate_a_project(self):
+        for action, package, archive in [("delete", "nimbus", None),
+                                         ("project", "../nimbus", None),
+                                         ("project", "nimbus", "unexpected.src.rpm")]:
+            with self.subTest(action=action, package=package):
+                with self.assertRaises(ValueError):
+                    publisher.publish(action, package, archive)
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / "candidate.src.rpm"
+            archive.write_bytes(b"fixture")
+            for identity in ["nimbus\n1\n", "voxtype\n0\n", "garbage\n"]:
+                with self.subTest(identity=identity):
+                    with patch.object(publisher.subprocess, "run") as run:
+                        run.return_value.stdout = identity
+                        with self.assertRaisesRegex(ValueError, "identity"):
+                            publisher.publish("build", "voxtype", archive)
+                        run.assert_called_once()
+            with patch.object(publisher.subprocess, "run",
+                              side_effect=subprocess.CalledProcessError(1, "rpm")):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    publisher.publish("build", "voxtype", archive)
+        self.client.project_proxy.add.assert_not_called()
+        self.assertEqual(self.config_paths, [])
 
 
 if __name__ == "__main__":
