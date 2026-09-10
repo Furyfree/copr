@@ -190,7 +190,7 @@ func publication(t *testing.T) (*Publisher, *int, *[]string) {
 			}
 			var body map[string]any
 			json.NewDecoder(r.Body).Decode(&body)
-			if r.URL.Query().Get("exist_ok") != "true" || body["enable_net"] != false || body["devel_mode"] != false {
+			if body["enable_net"] != false || body["devel_mode"] != false {
 				t.Fatal("unsafe project mutation")
 			}
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{}`)), Header: http.Header{}}, nil
@@ -219,6 +219,36 @@ func publication(t *testing.T) (*Publisher, *int, *[]string) {
 	}
 	return p, calls, paths
 }
+
+func TestProjectCreationAllowsExistingProjects(t *testing.T) {
+	for _, state := range []string{"new", "existing"} {
+		t.Run(state, func(t *testing.T) {
+			p, _, paths := publication(t)
+			exists := state == "existing"
+			native := p.Client.Transport
+			p.Client.Transport = roundTrip(func(r *http.Request) (*http.Response, error) {
+				if r.Method == http.MethodPost {
+					// Match COPR's case-sensitive exist_ok handling, including HTTP 400.
+					// frontend/coprs_frontend/coprs/views/apiv3_ns/apiv3_projects.py
+					if exists && r.URL.Query().Get("exist_ok") != "True" {
+						return &http.Response{StatusCode: http.StatusBadRequest, Body: io.NopCloser(strings.NewReader(`{"error":"You already have a project with this name"}`)), Header: http.Header{}}, nil
+					}
+					exists = true
+				}
+				return native.RoundTrip(r)
+			})
+			for range 2 {
+				if err := p.Publish(t.Context(), "project", "nimbus", ""); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if len(*paths) != 0 {
+				t.Fatal("project setup submitted a build")
+			}
+		})
+	}
+}
+
 func TestPublicationRoutesAndCleansCredentials(t *testing.T) {
 	c, err := Load(repository(t))
 	if err != nil {

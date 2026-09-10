@@ -154,7 +154,8 @@ func (p *Publisher) Publish(ctx context.Context, action, name, srpm string) erro
 		}
 	}
 	request := map[string]any{"name": project.Name, "chroots": project.Chroots, "description": project.Description, "homepage": project.Homepage, "instructions": "sudo dnf copr enable " + a.owner + "/" + project.Name, "enable_net": false, "devel_mode": false, "unlisted_on_hp": false}
-	if err := p.request(ctx, "POST", "/project/add/"+a.owner+"?exist_ok=true", a, request, nil); err != nil {
+	// COPR accepts only the exact string "True" for this query parameter.
+	if err := p.request(ctx, "POST", "/project/add/"+a.owner+"?exist_ok=True", a, request, nil); err != nil {
 		return err
 	}
 	var existing struct {
