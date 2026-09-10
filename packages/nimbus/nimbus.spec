@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 69237bd5c7f52bfc7c9d02766b6a0cadc547fcfa98958530cffe766cc8682f8c
+%global source_sha256 30efb121dcd82f28fdfd2177e422578839fe8486aa062e112161474e3ae487d5
 
 Name:           nimbus
-Version:        0.2.3
+Version:        0.3.0
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,11 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Thu Sep 10 2026 Nimbus maintainers - 0.3.0-0.1
+- Separate sync from Topgrade upgrades and simplify workstation ownership.
+- Add bounded Snapper snapshots and package version constraints.
+- Finalize interrupted changes and report Snapper configuration drift.
+
 * Wed Sep 09 2026 Nimbus maintainers - 0.2.3-0.1
 - Fix requested package resolution in DNF dependency installation sections.
 
