@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/packaging"
 )
 
@@ -29,8 +30,15 @@ func run(ctx context.Context, args []string) error {
 	}
 	switch args[0] {
 	case "prepare":
-		if len(args) != 3 {
-			return fmt.Errorf("prepare requires PACKAGE OUTDIR")
+		if len(args) == 4 && args[1] == "github-copilot-installer" && args[3] == "--latest" {
+			a, err := copilot.LatestRelease(ctx)
+			if err != nil {
+				return err
+			}
+			b.CopilotRelease = &a
+			fmt.Fprintf(os.Stderr, "Selected Copilot %s, SHA-256 %s\n", a.Version, a.SHA256)
+		} else if len(args) != 3 {
+			return fmt.Errorf("prepare requires PACKAGE OUTDIR [--latest for github-copilot-installer]")
 		}
 		path, err := b.Prepare(ctx, args[1], args[2])
 		if err == nil {

@@ -1,4 +1,4 @@
-.TH GITHUB-COPILOT-INSTALLER 1 "September 2026" "github-copilot-installer 0.2.0" "User Commands"
+.TH GITHUB-COPILOT-INSTALLER 1 "September 2026" "github-copilot-installer 0.3.0" "User Commands"
 .SH NAME
 github-copilot-installer \- install GitHub's official GitHub Copilot RPM on Fedora
 .SH SYNOPSIS
@@ -13,10 +13,18 @@ installation or updates to DNF.
 .PP
 The GitHub Copilot application is proprietary and is not contained in the
 installer package or its COPR repository.
+.PP
+Installing or upgrading the helper RPM queues a one-shot systemd job to install
+the package's selected app release after DNF releases its transaction lock.
+The app download is verified against the SHA-256 embedded in the helper.
+DNF may finish before the app job. Inspect github-copilot-installer.service
+with systemctl status; failed jobs retry after a minute, with at most three
+starts in fifteen minutes. Use dnf reinstall github-copilot-installer to retry
+after a failed job or an installation without running systemd.
 .SH COMMANDS
 .TP
 .B install
-Install the latest selected GitHub Copilot release.
+Install the GitHub Copilot release pinned in this helper package.
 .TP
 .B update
 Update an existing recognized GitHub Copilot installation.
@@ -34,8 +42,8 @@ installed RPM SHA-256 header to match the artifact after DNF; a different
 same-version installed header is refused before DNF can silently skip it.
 .TP
 .B status
-Show the helper and installed application versions, without network access
-or temporary files.
+Show the helper, selected application version and SHA-256, and installed
+application version, without network access or temporary files.
 .TP
 .B uninstall
 Remove the upstream application package while retaining user data.
@@ -48,8 +56,9 @@ Print command usage.
 .SH OPTIONS
 .TP
 .BI \-\-app\-version " VERSION"
-Select an explicit GitHub Copilot release instead of the latest release.
+Select an explicit GitHub Copilot release instead of the packaged release.
 Selects the release for install, update and prepare; required with apply.
+Without this option, prepare still resolves GitHub's latest stable release.
 .TP
 .BR \-\-assumeyes ", " \-y
 Pass automatic yes confirmation to DNF. Valid only for mutating commands.

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "version": "1.1.17",
+  "name": "github",
+  "arch": "x86_64",
+  "sha256": "a7631c4314713551874e380cefbb8205b41e3044c10416db7649bb023ca6d24e",
+  "path": "",
+  "source": "https://github.com/github/app/releases/download/v1.1.17/GitHub-Copilot-linux-x64.rpm"
+}

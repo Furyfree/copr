@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-const Version = "0.2.0"
+const Version = "0.3.0"
 const assetName = "GitHub-Copilot-linux-x64.rpm"
 const identityFormat = "%{NAME}\t%{VERSION}\t%{RELEASE}\t%{ARCH}\t%{LICENSE}\t%{SUMMARY}\t%{EPOCHNUM}\n"
 
@@ -108,10 +108,11 @@ type Installer struct {
 	temp     string
 	root     func() bool
 	platform func() error
+	release  func() (Artifact, error)
 }
 
 func New() *Installer {
-	e := &Installer{out: os.Stdout, temp: "/var/tmp", root: func() bool { return os.Geteuid() == 0 }, platform: platformCheck}
+	e := &Installer{out: os.Stdout, temp: "/var/tmp", root: func() bool { return os.Geteuid() == 0 }, platform: platformCheck, release: packageRelease}
 	e.client = &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(r *http.Request, via []*http.Request) error {
 		if len(via) >= 5 || !officialURL(r.URL.String()) {
 			return errors.New("download redirected outside official GitHub source")
@@ -399,7 +400,19 @@ func (e *Installer) Execute(ctx context.Context, o Options) error {
 	if slices.Contains([]string{"install", "update", "apply", "uninstall"}, o.Command) && !e.root() {
 		return errors.New("this command changes system packages; requires root")
 	}
+	var pinned *Artifact
+	if (o.Command == "install" || o.Command == "update") && o.Version == "" {
+		a, err := e.release()
+		if err != nil {
+			return err
+		}
+		pinned, o.Version = &a, a.Version
+	}
 	if o.Command == "status" {
+		target, err := e.release()
+		if err != nil {
+			return err
+		}
 		i, err := e.installed(ctx)
 		if err != nil {
 			return err
@@ -408,7 +421,7 @@ func (e *Installer) Execute(ctx context.Context, o Options) error {
 		if i != nil {
 			version = i.version + "-" + i.release
 		}
-		_, err = fmt.Fprintf(e.out, "Installer: %s\nInstalled GitHub Copilot: %s\n", Version, version)
+		_, err = fmt.Fprintf(e.out, "Installer: %s\nSelected GitHub Copilot: %s\nSelected SHA-256: %s\nInstalled GitHub Copilot: %s\n", Version, target.Version, target.SHA256, version)
 		return err
 	}
 	if o.Command == "uninstall" {
@@ -497,6 +510,9 @@ func (e *Installer) Execute(ctx context.Context, o Options) error {
 		selected, err := e.resolve(ctx, o.Version)
 		if err != nil {
 			return err
+		}
+		if pinned != nil && selected.SHA256 != pinned.SHA256 {
+			return errors.New("GitHub release no longer matches the SHA-256 selected by this package")
 		}
 		selected.Path = a.Path
 		a = selected

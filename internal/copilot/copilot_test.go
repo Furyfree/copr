@@ -41,6 +41,9 @@ func setup(t *testing.T) *fixture {
 	f := &fixture{e: New(), data: []byte("official RPM fixture"), version: "1.1.17", release: "1", header: strings.Repeat("a", 64), comparison: "-1"}
 	sum := sha256.Sum256(f.data)
 	f.digest = hex.EncodeToString(sum[:])
+	f.e.release = func() (Artifact, error) {
+		return Artifact{1, "1.1.17", "github", "x86_64", f.digest, "", sourceURL("1.1.17")}, nil
+	}
 	f.e.temp = t.TempDir()
 	f.e.out = &f.out
 	f.e.root = func() bool { return true }

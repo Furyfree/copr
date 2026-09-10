@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -68,8 +69,9 @@ func CleanEnvironment() []string {
 }
 
 type Builder struct {
-	Root string
-	Run  Runner
+	Root           string
+	Run            Runner
+	CopilotRelease *copilot.Artifact
 }
 
 func New(root string) *Builder { return &Builder{Root: root, Run: Run} }

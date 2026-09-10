@@ -1,4 +1,30 @@
-# GitHub Copilot installer helper
+# GitHub Copilot package installer
+
+Install or upgrade `github-copilot-installer` with DNF to automatically install
+the Copilot release selected by that package. The proprietary RPM is downloaded
+directly from GitHub on your computer; COPR hosts only the open-source installer
+and its pinned release metadata.
+
+~~~sh
+sudo dnf install github-copilot-installer
+sudo dnf upgrade github-copilot-installer
+~~~
+
+DNF queues a one-shot systemd job. The job waits for DNF's transaction lock,
+verifies the download and installs the native `github` RPM. DNF finishing the
+helper transaction does not mean the app job has finished. Check its result:
+
+~~~sh
+systemctl status github-copilot-installer.service
+github-copilot-installer status
+~~~
+
+Failures appear in the service status and journal. The job retries after one
+minute, with at most three starts in fifteen minutes. It does not poll for new
+upstream versions or run at every boot. After a network failure, interrupted
+boot or failed job, `sudo dnf reinstall github-copilot-installer` queues it
+again. Installing into an image without running systemd prints this same
+recovery instruction. A small installer and service remain installed.
 
 This repository maintains the Go installer in `cmd/github-copilot-installer`
 and `internal/copilot`, with its recipe, license and manual in this directory. The original 0.1.2 import was derived from
@@ -15,7 +41,8 @@ The downloaded RPM's signature and digests were verified against the
 [project key](https://download.copr.fedorainfracloud.org/results/furyfree/github-copilot-installer/pubkey.gpg),
 fingerprint `D09200FC482801551973B03F4A868CE1F2B0A28A`.
 
-Local Go candidate 0.2.0 adds separate preparation and application commands,
+Local Go candidate 0.3.0 adds package-triggered installation and pins the
+selected app release. It retains separate preparation and application commands,
 stable-release and downgrade checks, and a GitHub HTTPS redirect allowlist.
 `status` remains offline with no temporary files. Termination signals clean up
 incomplete downloads and privileged staging. The tests cover these paths. The helper supports
@@ -23,17 +50,21 @@ Fedora 43/44 x86_64; our tested packaging target is Fedora 44 x86_64.
 
 ## Application lifecycle
 
-The `install` and `update` commands download Copilot directly from GitHub.
-`--app-version VERSION` selects a release; otherwise an explicit invocation
-resolves the latest release using GitHub's API. There is no hardcoded app
-version and no timer or background service. `status` reports only the helper
-and installed app versions, without checking for new releases.
+The `install` and `update` commands default to the version and SHA-256 embedded
+in the installed helper. GitHub metadata must still match that pin. Publishing
+a new Copilot helper selects the latest stable release at preparation time;
+new upstream releases do not change existing packages. `--app-version VERSION`
+retains the explicit manual override, verified against GitHub's release API.
+The standalone `prepare` command still defaults to GitHub's latest stable
+release. `status` reports the helper, selected app version and digest, and
+installed app version without checking for new releases.
 
-COPR/DNF updates the helper. An explicit helper `update` command updates the
-application; upgrading the helper alone does not upgrade Copilot. `uninstall`
+Installing, reinstalling or upgrading the helper queues the app job. `uninstall`
 removes the native `github` RPM and preserves user data. Removing only the
-helper leaves Copilot installed. The SRPM and binary RPM contain no
-proprietary app payload and have no installation scriptlets or triggers.
+helper stops its job and leaves Copilot installed. To remove both through DNF,
+remove `github-copilot-installer` and `github` together. The SRPM and binary RPM
+contain no proprietary app payload. RPM scriptlets only manage and queue the
+service; they do not download files or nest a DNF installation.
 
 The helper checks the official asset URL, GitHub API SHA-256, RPM internal
 digests, and native identity, including an epoch of zero. Only published stable
@@ -83,31 +114,43 @@ comparison identifies the recorded RPM, not the integrity of live app files.
 Both preparation and application refuse a recognized installed newer version.
 The caller must approve the exact digest and version before invoking apply.
 
-Nimbus's integration plan is in its
-[roadmap](https://github.com/Furyfree/nimbus/blob/main/docs/ROADMAP.md). The helper
-provides download and transaction primitives; Nimbus still owns its review,
-approval, receipts, retry and removal workflow. Dotfiles has no system-package
-role here. Standalone install/update remain available and combine download
-with a native DNF confirmation unless `--assumeyes` is supplied.
+Nimbus can install this package through its ordinary DNF flow; no separate
+postinstall invocation is required. Older Nimbus and Topgrade helper calls
+remain supported and default to the package's selected release. Dotfiles has
+no system-package role here. Standalone install/update retain native DNF
+confirmation unless `--assumeyes` is supplied. The automatic job supplies that
+flag because installing the helper requests installation of its selected app.
 
 ## Build and verify
 
 Run `just check-container` for the complete offline Fedora gate, or
 `just check-package github-copilot-installer` inside that tooling environment.
 The gate builds the helper SRPM and x86_64 binary RPM, runs its Go regression
-tests, and checks payload, version, licenses and absence of scriptlets/triggers.
-No live application transaction is run.
+tests, and checks payload, versions, licenses, the systemd unit, deferred
+scriptlets and native DNF-compatible locking. No live app transaction or
+systemd-host install/upgrade/retry drill is run; those require a disposable VM.
 
 ~~~sh
 just prepare github-copilot-installer /tmp/github-copilot-installer-srpm
 ~~~
 
-Preparation bundles only this helper and its tests, with any needed Go modules.
-The binary build runs offline; installed runtime dependencies are DNF and RPM.
-The helper needs no Python, jq or curl. Update its Go version constant, manual
-and spec together. Retain the upstream MIT attribution when modifying the port.
+Local preparation uses the checked-in release pin. To select the latest stable
+release without publishing, use:
 
-After review and merge, `just publish github-copilot-installer` publishes this
-helper only. Verify its signing key before Nimbus integration. The published
+~~~sh
+go run ./cmd/coprctl prepare github-copilot-installer /tmp/copilot-latest --latest
+~~~
+
+Preparation bundles only this helper, its release metadata and tests, with
+any needed Go modules. It does not download the app RPM.
+The binary build runs offline; runtime dependencies include DNF, RPM, systemd
+and util-linux's native lock command.
+The helper needs no Python, jq or curl. Update its Go version constant, manual
+and spec together. The app version is also part of the RPM release. Retain the
+upstream MIT attribution when modifying the port.
+
+After review and merge, `just publish github-copilot-installer` prepares this
+helper with the latest stable app pin and publishes the helper only. Verify its
+signing key before Nimbus integration. The published
 0.1.2 RPM remains the Bash implementation until the Go candidate is explicitly
-published. See the [publishing workflow](../../README.md#workflow).
+published. See [publishing](../../README.md#publishing).

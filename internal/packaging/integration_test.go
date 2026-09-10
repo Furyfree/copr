@@ -11,7 +11,10 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
+
+	"github.com/Furyfree/copr/internal/copilot"
 )
 
 func native(t *testing.T, dir, name string, args ...string) []byte {
@@ -44,6 +47,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			selected(t, name)
 			root := t.TempDir()
 			b := New(repository(t))
+			if name == "github-copilot-installer" {
+				b.CopilotRelease = &copilot.Artifact{SchemaVersion: 1, Version: "1.1.18", Name: "github", Arch: "x86_64", SHA256: strings.Repeat("b", 64), Source: "https://github.com/github/app/releases/download/v1.1.18/GitHub-Copilot-linux-x64.rpm"}
+			}
 			srpm, err := b.Prepare(t.Context(), name, filepath.Join(root, "sources"))
 			if err != nil {
 				t.Fatal(err)
@@ -63,7 +69,15 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			rpm := packages[0]
 			for _, option := range []string{"--scripts", "--triggers"} {
-				if data := native(t, "", "rpm", "-qp", option, rpm); len(data) != 0 {
+				data := native(t, "", "rpm", "-qp", option, rpm)
+				if name == "github-copilot-installer" && option == "--scripts" {
+					if !bytes.Contains(data, []byte("systemctl --no-block restart github-copilot-installer.service || exit 1")) || bytes.Contains(data, []byte("--assumeyes")) {
+						t.Fatalf("Copilot must schedule its installer outside the RPM transaction: %s", data)
+					}
+					checkCopilotScheduling(t, string(native(t, "", "rpm", "-qp", "--qf", "%{POSTTRANS}", rpm)))
+					continue
+				}
+				if len(data) != 0 {
 					t.Fatalf("unexpected %s: %s", option, data)
 				}
 			}
@@ -75,6 +89,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			paths := strings.Fields(string(native(t, "", "rpm", "-qpl", rpm)))
 			for _, path := range paths {
+				if name == "github-copilot-installer" && path == "/usr/lib/systemd/system/github-copilot-installer.service" {
+					continue
+				}
 				if path != "/usr/bin/"+name && !strings.HasPrefix(path, "/usr/share/doc/"+name) && !strings.HasPrefix(path, "/usr/share/licenses/"+name) && !strings.HasPrefix(path, "/usr/share/man/man1/"+name+".1") {
 					t.Fatalf("unexpected installed path %q", path)
 				}
@@ -108,8 +125,84 @@ func TestNativeHelperRPMs(t *testing.T) {
 			if name == "github-copilot-installer" && !bytes.Contains(license, []byte("Chris Titus Tech")) {
 				t.Fatal("upstream copyright missing")
 			}
+			if name == "github-copilot-installer" {
+				status := native(t, "", filepath.Join(extracted, "usr/bin", name), "status")
+				if !bytes.Contains(status, []byte("Selected GitHub Copilot: 1.1.18\nSelected SHA-256: "+strings.Repeat("b", 64))) {
+					t.Fatalf("prepared release was not bundled: %s", status)
+				}
+				release := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
+				if !bytes.Contains(release, []byte("app1.1.18")) {
+					t.Fatalf("app version does not advance the package release: %s", release)
+				}
+				unit := filepath.Join(extracted, "usr/lib/systemd/system/github-copilot-installer.service")
+				data, err := os.ReadFile(unit)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Resolve the packaged executable in a disposable unit for native validation.
+				checkUnit := filepath.Join(root, name+".service")
+				write(t, checkUnit, strings.ReplaceAll(string(data), "/usr/bin/"+name, filepath.Join(extracted, "usr/bin", name)))
+				native(t, "", "systemd-analyze", "verify", checkUnit)
+				native(t, "", "flock", "--fcntl", "--exclusive", "--timeout", "1", filepath.Join(root, "lock"), "true")
+			}
 		})
 	}
+}
+
+func checkCopilotScheduling(t *testing.T, script string) {
+	t.Helper()
+	for _, fail := range []bool{false, true} {
+		root := t.TempDir()
+		bin := filepath.Join(root, "bin")
+		write(t, filepath.Join(bin, "systemctl"), `#!/bin/sh
+printf '%s\n' "$*" >> "$COPR_TEST_CALLS"
+case "$1" in
+    reset-failed) exit 1 ;;
+    --no-block) exit "$COPR_TEST_QUEUE_RESULT" ;;
+esac
+`)
+		if err := os.Chmod(filepath.Join(bin, "systemctl"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		result := "0"
+		if fail {
+			result = "1"
+		}
+		calls := filepath.Join(root, "calls")
+		cmd := exec.CommandContext(t.Context(), "sh", "-c", strings.ReplaceAll(script, "/run/systemd/system", root))
+		cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "COPR_TEST_CALLS="+calls, "COPR_TEST_QUEUE_RESULT="+result)
+		out, err := cmd.CombinedOutput()
+		if (err != nil) != fail || bytes.Contains(out, []byte("installation queued")) == fail {
+			t.Fatalf("incorrect scheduling result: %v %s", err, out)
+		}
+		data, err := os.ReadFile(calls)
+		if err != nil || !bytes.Contains(data, []byte("--no-block restart github-copilot-installer.service\n")) {
+			t.Fatalf("fresh installation did not queue its service: %v %s", err, data)
+		}
+	}
+}
+
+func TestCopilotWaitUsesDNFRecordLock(t *testing.T) {
+	selected(t, "github-copilot-installer")
+	path := filepath.Join(t.TempDir(), "rpmtransaction.lock")
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	lock := syscall.Flock_t{Type: syscall.F_WRLCK, Whence: 0}
+	if err := syscall.FcntlFlock(f.Fd(), syscall.F_SETLK, &lock); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.CommandContext(t.Context(), "flock", "--fcntl", "--exclusive", "--nonblock", "--conflict-exit-code", "75", path, "true")
+	if out, err := cmd.CombinedOutput(); err == nil || cmd.ProcessState.ExitCode() != 75 {
+		t.Fatalf("installer lock did not conflict with DNF's POSIX lock: %v %s", err, out)
+	}
+	lock.Type = syscall.F_UNLCK
+	if err := syscall.FcntlFlock(f.Fd(), syscall.F_SETLK, &lock); err != nil {
+		t.Fatal(err)
+	}
+	native(t, "", "flock", "--fcntl", "--exclusive", "--nonblock", path, "true")
 }
 
 func TestNativeMakeContract(t *testing.T) {

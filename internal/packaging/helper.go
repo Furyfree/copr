@@ -2,8 +2,13 @@ package packaging
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"regexp"
+
+	"github.com/Furyfree/copr/internal/copilot"
 )
 
 func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, error) {
@@ -47,6 +52,34 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 	}
 	for _, path := range []string{filepath.Join("cmd", name), filepath.Join("internal", implementation)} {
 		if err := copyTree(filepath.Join(b.Root, path), filepath.Join(tree, path)); err != nil {
+			return "", err
+		}
+	}
+	if name == "github-copilot-installer" {
+		pin := filepath.Join(tree, "internal/copilot/release.json")
+		data, err := os.ReadFile(filepath.Join(b.Root, "internal/copilot/release.json"))
+		if err != nil {
+			return "", err
+		}
+		if b.CopilotRelease != nil {
+			data, err = json.MarshalIndent(b.CopilotRelease, "", "  ")
+			if err != nil {
+				return "", err
+			}
+		}
+		a, err := copilot.ParseRelease(data)
+		if err != nil {
+			return "", err
+		}
+		macro := regexp.MustCompile(`(?m)^%global app_version \S+$`)
+		if len(macro.FindAll(recipe, -1)) != 1 {
+			return "", errors.New("expected one Copilot app_version macro")
+		}
+		recipe = macro.ReplaceAll(recipe, []byte("%global app_version "+a.Version))
+		if err := os.WriteFile(pin, data, 0o644); err != nil {
+			return "", err
+		}
+		if err := Copy(filepath.Join(packageDir, "files", name+".service"), filepath.Join(tree, name+".service")); err != nil {
 			return "", err
 		}
 	}

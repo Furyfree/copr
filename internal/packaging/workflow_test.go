@@ -135,3 +135,43 @@ func TestWorkflowCheckRouting(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkflowSelectsLatestCopilotOnly(t *testing.T) {
+	root := repository(t)
+	data, err := os.ReadFile(filepath.Join(root, ".github/workflows/copr.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, step, ok := strings.Cut(string(data), "      - name: Prepare selected source RPM\n")
+	if !ok {
+		t.Fatal("missing source preparation step")
+	}
+	step, _, _ = strings.Cut(step, "\n      - ")
+	_, script, ok := strings.Cut(step, "        run: |\n")
+	if !ok {
+		t.Fatal("missing preparation script")
+	}
+	for _, name := range []string{"nimbus", "voxtype", "github-copilot-installer", "wowup-cf-installer"} {
+		t.Run(name, func(t *testing.T) {
+			temp := t.TempDir()
+			bin := filepath.Join(temp, "bin")
+			write(t, filepath.Join(bin, "docker"), "#!/bin/sh\nprintf '%s\\n' \"$@\"\n")
+			if err := os.Chmod(filepath.Join(bin, "docker"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.CommandContext(t.Context(), "bash", "-euo", "pipefail", "-c", script)
+			cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "RUNNER_TEMP="+temp, "GITHUB_WORKSPACE="+root, "PACKAGE="+name)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("preparation failed: %v %s", err, out)
+			}
+			want := "prepare\n" + name + "\n/output\n"
+			if name == "github-copilot-installer" {
+				want += "--latest\n"
+			}
+			if !strings.HasSuffix(string(out), want) {
+				t.Fatalf("wrong release selection: %s", out)
+			}
+		})
+	}
+}

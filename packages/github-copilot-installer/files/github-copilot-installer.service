@@ -1,0 +1,15 @@
+[Unit]
+Description=Install the Copilot release selected by the COPR package
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=15min
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+# DNF5 uses POSIX record locks; --fcntl conflicts with those locks.
+ExecStartPre=/usr/bin/flock --fcntl --exclusive --timeout 600 /run/dnf/rpmtransaction.lock /usr/bin/true
+ExecStart=/usr/bin/github-copilot-installer install --assumeyes
+TimeoutStartSec=20min
+Restart=on-failure
+RestartSec=60s
