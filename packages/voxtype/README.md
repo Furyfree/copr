@@ -1,9 +1,9 @@
 # Voxtype
 
-Local candidate for Fedora 44 x86_64, built from the signed upstream 1.0.1
-source. It builds the CPU Whisper daemon with no optional GPU/ONNX/OSD features.
-It is not published or selected by Nimbus yet. Models, languages, hotkeys, and
-optional acceleration remain deployment choices.
+Published for Fedora 44 x86_64, built from the signed upstream 1.0.1 source.
+It builds the CPU Whisper daemon with no optional GPU/ONNX/OSD features.
+Nimbus has not selected it yet. Models, languages, hotkeys, and optional
+acceleration remain deployment choices.
 
 `prepare.py` verifies the reviewed source SHA-256 and upstream detached
 signature against `signing.asc`, then vendors the exact Cargo.lock dependencies.
@@ -58,7 +58,7 @@ normal/build dependency graph; license notices are included in the package.
 Native microphone, transcription, compositor output, service start/stop, and
 install/update/removal trials remain separate from compilation and CLI smoke
 checks. Confirm CPU compatibility and any additional acceleration features on
-the actual target before publishing.
+the actual target before deployment.
 
 Local validation on 2026-09-09 passed a Fedora 44 x86_64 offline rebuild,
 including 1,002 upstream library tests and the CLI version/help checks. Two
@@ -66,4 +66,11 @@ upstream model-download tests remain ignored. The test build needed a 10 GiB
 container memory limit; the initial 6 GiB limit caused memory pressure.
 The then-current `make check` passed all 11 repository tests and both package
 spec checks. The current local gate is `just check`.
-The resulting local RPM is unsigned; COPR signing and publication are pending.
+
+Published on 2026-09-10 as `voxtype-1.0.1-0.2.fc44.x86_64` in
+[COPR build 10968949](https://copr.fedorainfracloud.org/coprs/furyfree/voxtype/build/10968949/).
+The offline COPR build passed 1,002 upstream library tests; the two
+model-download tests remained ignored. The downloaded RPM's service
+scriptlets were checked, and its signature and digests verified against the
+[project key](https://download.copr.fedorainfracloud.org/results/furyfree/voxtype/pubkey.gpg),
+fingerprint `B4DED69E7793D5DF2FC32BC1C69E64492CA2E833`.

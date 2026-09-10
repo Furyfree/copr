@@ -7,8 +7,8 @@ installer helper is maintained locally alongside its recipe.
 | Package | Target | Status |
 | --- | --- | --- |
 | [Nimbus](packages/nimbus/README.md) | Fedora 44, x86_64 | [0.2.3 recipe; manual builds](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/builds/) |
-| [Voxtype](packages/voxtype/README.md) | Fedora 44, x86_64 | Local 1.0.1 CPU candidate; not published |
-| [GitHub Copilot installer](packages/github-copilot-installer/README.md) | Fedora 44, x86_64 | Local 0.1.2 MIT helper candidate; app downloaded separately |
+| [Voxtype](packages/voxtype/README.md) | Fedora 44, x86_64 | [1.0.1-0.2 CPU build published](https://copr.fedorainfracloud.org/coprs/furyfree/voxtype/build/10968949/) |
+| [GitHub Copilot installer](packages/github-copilot-installer/README.md) | Fedora 44, x86_64 | [0.1.2-0.1 published](https://copr.fedorainfracloud.org/coprs/furyfree/github-copilot-installer/build/10968946/); app downloaded separately |
 
 ## Account setup
 

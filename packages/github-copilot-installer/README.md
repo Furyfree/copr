@@ -9,6 +9,12 @@ The imported archive's SHA-256 was
 The original MIT copyright and permission notice are retained in `LICENSE`.
 Future changes are maintained here; builds do not fetch the upstream helper.
 
+Published for Fedora 44 as `github-copilot-installer-0.1.2-0.1.fc44.noarch`
+on 2026-09-10 in [COPR build 10968946](https://copr.fedorainfracloud.org/coprs/furyfree/github-copilot-installer/build/10968946/).
+The downloaded RPM's signature and digests were verified against the
+[project key](https://download.copr.fedorainfracloud.org/results/furyfree/github-copilot-installer/pubkey.gpg),
+fingerprint `D09200FC482801551973B03F4A868CE1F2B0A28A`.
+
 Our changes make `status` offline with no temporary files, restrict download
 redirects to HTTPS, and exit on termination signals after cleanup. The tests
 cover these paths and the inherited installation checks. The helper supports
