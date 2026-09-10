@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 30efb121dcd82f28fdfd2177e422578839fe8486aa062e112161474e3ae487d5
+%global source_sha256 f56fa5320fa05abd6663ae4cc9e06b55b95b39876853fe02aef1346d2d0b40d8
 
 Name:           nimbus
-Version:        0.3.0
+Version:        0.3.1
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Thu Sep 10 2026 Nimbus maintainers - 0.3.1-0.1
+- Reuse empty pre-mounted Snapper storage with reviewed, retryable setup.
+- Ask for the machine on first installation and restore the Fedora guide.
+
 * Thu Sep 10 2026 Nimbus maintainers - 0.3.0-0.1
 - Separate sync from Topgrade upgrades and simplify workstation ownership.
 - Add bounded Snapper snapshots and package version constraints.
