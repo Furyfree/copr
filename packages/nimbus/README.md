@@ -173,8 +173,15 @@ The source archive SHA-256 is
 `a8cdf5b06bf59742d6bdaec529d625105f806299de91d5f45cbd5e8ae8c9b720`.
 All 254 tagged files and executable bits match the commit. Vendored dependencies
 and license notices are unchanged from 0.3.1. Nimbus `just check`, definition
-validation and the GitHub vendored release build/tests passed. COPR publication
-and desktop installation validation are pending.
+validation and the GitHub vendored release build/tests passed.
+
+[Build 10976629](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10976629/)
+published `nimbus-0.4.0-0.1.fc44.x86_64`. The local offline container gate and
+publication workflow passed. Both prepared and published SRPMs retain the exact
+archive. RPM signatures and digests passed against the pinned project key.
+The payload contains only the engine and license notices, with no scriptlets;
+the extracted engine reports 0.4.0 and validates all three machines in a
+network-disabled Fedora container. Desktop installation remains untested.
 
 ## Source and validation
 
