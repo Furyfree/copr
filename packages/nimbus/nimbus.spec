@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 f56fa5320fa05abd6663ae4cc9e06b55b95b39876853fe02aef1346d2d0b40d8
+%global source_sha256 a8cdf5b06bf59742d6bdaec529d625105f806299de91d5f45cbd5e8ae8c9b720
 
 Name:           nimbus
-Version:        0.3.1
+Version:        0.4.0
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,12 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Fri Sep 11 2026 Nimbus maintainers - 0.4.0-0.1
+- Update clean Nimbus and Chezmoi repositories during sync.
+- Upgrade through Topgrade before restarting the updated engine for sync.
+- Add upstream Zed installation and shared browser/private-mode fallbacks.
+- Correct VM health checks and conditional session notices.
+
 * Thu Sep 10 2026 Nimbus maintainers - 0.3.1-0.1
 - Reuse empty pre-mounted Snapper storage with reviewed, retryable setup.
 - Ask for the machine on first installation and restore the Fedora guide.
