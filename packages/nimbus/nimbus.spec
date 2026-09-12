@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 06c3fed54492fa9a41a1985e10ab96a4e1d547d182b86b3180ed8c9758f5176c
+%global source_sha256 e6d09a8466f230f16bafbb46c71e6076cd2ebe2371c80aaebaeb754cd6957d3b
 
 Name:           nimbus
-Version:        0.4.4
+Version:        0.4.5
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Sun Sep 13 2026 Nimbus maintainers - 0.4.5-0.1
+- Retry verification while Noctalia completes background plugin updates.
+- Preserve timeout diagnostics without repeating source updates.
+
 * Sun Sep 13 2026 Nimbus maintainers - 0.4.4-0.1
 - Add explicit verification and repair of enabled Noctalia plugin exports.
 - Refresh affected plugin sources through Noctalia and wait for runtime files.
