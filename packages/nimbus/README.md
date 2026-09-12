@@ -246,8 +246,22 @@ All 271 tagged files and executable bits match the commit. Dependencies and
 23 vendored notices are unchanged from 0.4.3. Nimbus checks, definition
 validation and the GitHub offline vendored build/tests passed. The full offline
 packaging gate passed in an isolated Fedora 44 container. The prepared source
-RPM preserves the exact archive and spec. Signed-package verification and an
-installed-session trial remain pending.
+RPM preserves the exact archive and spec.
+
+[Build 10980508](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10980508/)
+published `nimbus-0.4.4-0.1.fc44.x86_64`; full and selected-package CI and the
+publication workflow passed. The published source RPM preserves the exact
+archive and spec. Native RPM signature and digest checks passed against an
+isolated keyring containing only Nimbus's pinned project key. The binary RPM
+SHA-256 is
+`b396c202e3fec01348b1f3898954bbb832e72bbc32a6054e13b05654333e6022`.
+
+The payload contains only the engine and license notices, without scriptlets
+or triggers. In an unprivileged, network-disabled Fedora container, the
+extracted engine reports 0.4.4, validates all three tagged machines and
+recognizes the laptop's Noctalia task in preview mode. Missing Noctalia is
+reported as blocked. No workstation upgrade or plugin repair was performed;
+an installed-session trial remains pending.
 
 ## Source and validation
 
