@@ -276,8 +276,20 @@ The source archive SHA-256 is
 All 271 tagged files and executable bits match the commit. Dependencies and
 23 vendored notices are unchanged from 0.4.4. Nimbus checks, definition
 validation and the GitHub offline vendored build/tests passed. The full offline
-packaging gate passed in an isolated Fedora 44 container. Signed-package
-verification and a fresh installed-session repair trial remain pending.
+packaging gate passed in an isolated Fedora 44 container.
+
+[Build 10980526](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10980526/)
+published `nimbus-0.4.5-0.1.fc44.x86_64`. Full and selected-package CI and the
+publication workflow passed. Prepared and published source RPMs preserve the
+exact archive and spec. Native RPM signatures and digests passed with an
+isolated database containing only Nimbus's pinned key. Binary RPM SHA-256 is
+`6fe32b08a05168e3e68995e388f246d65c16a042235039559616b065f5ac97e8`.
+
+The payload contains only the engine and licenses, without scriptlets or
+triggers. The extracted engine reports 0.4.5, validates all three tagged
+machines and recognizes the laptop's Noctalia task in an unprivileged,
+network-disabled Fedora container. No workstation upgrade was performed;
+a fresh installed-session repair trial remains pending.
 
 ## Source and validation
 
