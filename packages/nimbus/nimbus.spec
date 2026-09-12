@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 ff1bb6ba7935432dad5b779e0a69b347dc8ec869eefdfe5a7546030c732db0c6
+%global source_sha256 339dbd35dfbe50f6275448219e420549bec15ef37261515c887a012e896b9006
 
 Name:           nimbus
-Version:        0.4.1
+Version:        0.4.2
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Sat Sep 12 2026 Nimbus maintainers - 0.4.2-0.1
+- Reconcile package sources and setup before combined software upgrades.
+- Select the verified ble.sh and Noctalia LibrePods COPRs in definitions.
+
 * Sat Sep 12 2026 Nimbus maintainers - 0.4.1-0.1
 - Select the default login shell while installing both Bash and Zsh.
 - Add explicit Tailscale operator and Proton-CachyOS post-install actions.
