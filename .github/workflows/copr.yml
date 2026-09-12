@@ -17,7 +17,7 @@ on:
       package:
         description: Package to publish independently
         type: choice
-        options: [nimbus, voxtype, github-copilot-installer, wowup-cf-installer]
+        options: [blesh, nimbus, voxtype, librepods, github-copilot-installer, wowup-cf-installer]
         default: nimbus
         required: true
 

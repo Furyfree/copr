@@ -4,8 +4,10 @@ Fedora 44 x86_64 packages and installer helpers.
 
 | Package | Purpose |
 | --- | --- |
+| [blesh](packages/blesh/README.md) | Bash highlighting, suggestions and fzf completion |
 | [nimbus](packages/nimbus/README.md) | Nimbus engine |
 | [voxtype](packages/voxtype/README.md) | Voxtype speech-to-text daemon |
+| [librepods](packages/librepods/README.md) | Headless AirPods daemon with Noctalia integration |
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
 
