@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 6716cd80d7092a2b7f84a50f71de02b64a7c71dfea45f24e64dec2c4e8d3fd4d
+%global source_sha256 06c3fed54492fa9a41a1985e10ab96a4e1d547d182b86b3180ed8c9758f5176c
 
 Name:           nimbus
-Version:        0.4.3
+Version:        0.4.4
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Sun Sep 13 2026 Nimbus maintainers - 0.4.4-0.1
+- Add explicit verification and repair of enabled Noctalia plugin exports.
+- Refresh affected plugin sources through Noctalia and wait for runtime files.
+
 * Sat Sep 12 2026 Nimbus maintainers - 0.4.3-0.1
 - Add Zeron bootstrap with explicit installer service and lingering disclosures.
 - Select Zsh defaults and disable the NVIDIA settings-loader autostart.
