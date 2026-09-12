@@ -1,7 +1,7 @@
 FROM registry.fedoraproject.org/fedora:44
 RUN dnf5 -y install git make just golang rpm-build rpmdevtools copr-cli \
     gnupg2 cargo rust systemd systemd-rpm-macros squashfs-tools bash coreutils \
-    ShellCheck \
+    ShellCheck gawk procps-ng ncurses glibc-langpack-en \
     && dnf5 clean all
 ENV GOTOOLCHAIN=local GOMODCACHE=/go/pkg/mod GOCACHE=/tmp/go-build
 COPY go.mod go.sum /opt/copr-modules/

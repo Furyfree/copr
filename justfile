@@ -50,5 +50,5 @@ project package: (_dispatch "project" package)
 
 [private]
 _dispatch operation package:
-    @case {{ quote(package) }} in nimbus|voxtype|github-copilot-installer|wowup-cf-installer) ;; *) echo 'Choose nimbus, voxtype, github-copilot-installer, or wowup-cf-installer' >&2; exit 2 ;; esac
+    @case {{ quote(package) }} in blesh|nimbus|voxtype|github-copilot-installer|wowup-cf-installer) ;; *) echo 'Choose blesh, nimbus, voxtype, github-copilot-installer, or wowup-cf-installer' >&2; exit 2 ;; esac
     gh workflow run copr.yml --repo Furyfree/copr --ref main -f {{ quote("operation=" + operation) }} -f {{ quote("package=" + package) }}

@@ -1,3 +1,9 @@
+[projects.blesh]
+name = "blesh"
+chroots = ["fedora-44-x86_64"]
+description = "Bash line editor with syntax highlighting, suggestions and fzf completion"
+homepage = "https://github.com/akinomyoga/ble.sh"
+
 [projects.nimbus]
 name = "nimbus"
 chroots = ["fedora-44-x86_64"]
