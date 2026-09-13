@@ -302,9 +302,22 @@ The source archive SHA-256 is
 `2d891a105e85b2ffb8ff291ede5e38163f05531144f504dccdeaeb141c845a95`.
 All 279 tagged files and executable bits match the commit. Dependencies and
 23 vendored notices are unchanged from 0.4.5. Nimbus local checks, definition
-validation, CI and the GitHub offline vendored build/tests passed. Signed RPM
-verification follows publication; fresh laptop setup and the promoted greeter
-mount still require installed-session testing.
+validation, CI and the GitHub offline vendored build/tests passed.
+
+[COPR build 10980604](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10980604/)
+published `nimbus-0.4.6-0.1.fc44.x86_64`. The full offline Fedora packaging gate,
+full and selected-package CI, and publication workflow passed. Prepared and
+published source RPMs preserve the exact archive and reviewed spec. Native RPM
+signatures and digests passed with only Nimbus's pinned key in an isolated
+database. Binary RPM SHA-256 is
+`e833600b0315f04e18dd4514517f3f339e68cf7a2c013e304062aa5510b4cf39`.
+
+The payload contains only the engine and licenses, without scripts or triggers.
+In an unprivileged, network-disabled Fedora container, the extracted engine
+reports 0.4.6, validates all three tagged machines and recognizes both new
+post-install tasks. Missing prerequisites correctly block their previews.
+No workstation upgrade was performed. Fresh laptop plugin setup and the
+promoted greeter mount still require installed-session testing.
 
 ## Source and validation
 
