@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 928927f49feda901d039c59ac595047dc09eb931345cf845d8a6f2fb68462988
+%global source_sha256 d6f99a5b62e35f9b754b0b5b2475456e517ba437a09cc66170289f55f62fbc36
 
 Name:           nimbus
-Version:        0.5.1
+Version:        0.5.2
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -16,6 +16,7 @@ BuildRequires:  golang >= 1.26.7
 BuildRequires:  git-core
 BuildRequires:  gnupg2
 BuildRequires:  python3
+BuildRequires:  nodejs
 Requires:       dnf5
 Requires:       rpm
 Requires:       flatpak
@@ -58,9 +59,15 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 
 %files
 %license LICENSE bundled-licenses licenses/Unicode-DFS-2016.txt
+%license internal/agentproxy/resources/UPSTREAM-LICENSE.txt
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.2-0.1
+- Add guided local-agent proxy setup and owned model refresh after upgrades.
+- Add targeted Noctalia lockscreen repair and fix styling after prompts.
+- Run adapter tests with Node and retain the upstream patch license notice.
+
 * Sun Sep 13 2026 Nimbus maintainers - 0.5.1-0.1
 - Fix setup verification and skip empty update transactions.
 - Improve terminal colors, wrapping, previews and final reporting.
