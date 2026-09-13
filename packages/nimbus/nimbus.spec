@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 2722499273598eb23f5f1bef2768d295c05254400750a1eb52ea1236ca63ca6b
+%global source_sha256 928927f49feda901d039c59ac595047dc09eb931345cf845d8a6f2fb68462988
 
 Name:           nimbus
-Version:        0.5.0
+Version:        0.5.1
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -61,6 +61,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Sun Sep 13 2026 Nimbus maintainers - 0.5.1-0.1
+- Fix setup verification and skip empty update transactions.
+- Improve terminal colors, wrapping, previews and final reporting.
+
 * Sun Sep 13 2026 Nimbus maintainers - 0.5.0-0.1
 - Engine-first maintenance, guided setup, local evidence and live progress.
 
