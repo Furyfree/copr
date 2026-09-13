@@ -369,7 +369,21 @@ The source archive SHA-256 is
 All 310 tagged files and executable modes match the release commit; all 754
 vendored files and 23 dependency notices are unchanged from 0.5.0. Nimbus's
 local gate, CI, race tests and Go 1.26.7 offline vendored release build/tests
-pass. Signed RPM publication and verification are recorded after the build.
+pass. The full offline packaging gate and source RPM rebuild also passed.
+
+[Build 10982208](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10982208/)
+published `nimbus-0.5.1-0.1.fc44.x86_64`. Full and selected-package CI and the
+publication workflow passed. Prepared and published source RPMs preserve the
+exact archive and spec. Published repository metadata and its package checksum
+match. Native RPM signatures and digests passed against the pinned project key
+in an isolated database. Binary RPM SHA-256 is
+`a88f3a2aaddb0b8641dd3c923d7fce0252f5c2770277e7a08a26402934febcab`.
+
+The payload contains only the engine and licenses, without scriptlets or
+triggers. In an unprivileged, offline Fedora container, the extracted engine
+reports 0.5.1, validates all three tagged machines and shows postinstall help.
+No workstation upgrade or authentication was performed; installed-session
+verification remains with the owner.
 
 ## Source and validation
 
