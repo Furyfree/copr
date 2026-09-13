@@ -404,9 +404,16 @@ Mise-owned prerequisite of the optional setup task.
 Nimbus's local gate, definition validation, CI and offline vendored release
 tests passed. Chezmoi's matching configuration gate passed. The complete
 packaging gate and an unprivileged offline SRPM rebuild passed; the prepared
-SRPM contains the exact published archive and reviewed spec. Signed-package
-verification will be recorded after publication. Antigravity sign-in and a
+SRPM contains the exact published archive and reviewed spec. Antigravity sign-in and a
 visual laptop lockscreen test remain outside the packaging checks.
+
+[COPR build 10982500](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10982500/)
+is submitted through the
+[publication workflow](https://github.com/Furyfree/copr/actions/runs/34786152917).
+Source import completed; the Fedora 44 binary build is queued. The published
+source RPM preserves the exact archive and spec. All three repositories' CI
+checks passed. Signed binary publication, metadata/signature verification and
+extracted-binary smoke tests remain pending; no host installation was run.
 
 ## Source and validation
 
