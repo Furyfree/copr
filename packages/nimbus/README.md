@@ -341,9 +341,19 @@ Full graphical init/login, real-account setup, hardware and snapshot recovery
 remain open. The installed 0.4.6 engine needs one direct DNF upgrade before the
 new workflow can manage engine updates. Current definitions require 0.5.0.
 
-The complete offline Fedora packaging gate passes. The prepared source RPM
-contains the exact published archive and reviewed spec. Published RPM
-verification remains pending until the COPR build completes.
+The complete offline Fedora packaging gate and a source-RPM rebuild pass.
+The rebuild uses a normal unprivileged account; an initial anonymous container
+UID failed current-user fixture checks. The successful retry changed no source
+or tests. Prepared and COPR-published source RPMs contain the exact archive and
+reviewed spec. All three repositories' GitHub checks passed.
+
+[COPR build 10981938](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10981938/)
+is submitted through the
+[publication workflow](https://github.com/Furyfree/copr/actions/runs/34770315892).
+At handoff it is waiting for Copr DistGit source import alongside dozens of
+other builds. The workflow continues automatically. Signed binary publication,
+signature/payload verification and extracted-binary smoke tests remain pending.
+No desktop or laptop package update was run.
 
 ## Source and validation
 
