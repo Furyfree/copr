@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 de3b682f01b867a0c7ba2ff4fb9a0c4743db6bc6e9dd37e2cec58d93cc3a6a30
+%global source_sha256 c67b8f4265755a376d37a566880389de785ab85dd2371f3d87858625d6aee286
 
 Name:           nimbus
-Version:        0.5.5
+Version:        0.5.6
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.6-0.1
+- Accept equivalent screen-adjusted lockscreen layouts after Noctalia restart.
+- Verify matching saved layouts without repeating the repair.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.5-0.1
 - Create managed parent directories during first-time 1Password setup.
 - Use a concise change summary and offer a full diff without a pager.
