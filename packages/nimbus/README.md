@@ -494,6 +494,16 @@ All 353 tagged files match the archive; vendored dependencies are unchanged from
 A local disposable native Chezmoi trial verifies directory creation, permissions,
 target scoping and conflict preservation. Interactive setup remains an owner trial.
 
+[COPR build 10984870](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10984870/)
+and [publication](https://github.com/Furyfree/copr/actions/runs/34861313985)
+succeeded after local offline and hosted checks. Repository metadata contains
+`nimbus-0.5.5-0.1.fc44.x86_64`, SHA-256:
+`8996d7207a40328e614848c2ef2c03383627972fbe985e487ab7497c59ad86a0`.
+Both RPM signatures and digests pass with only the pinned project key trusted.
+The source RPM retains the reviewed archive/spec; the binary contains only the
+engine and licenses, without scripts or triggers. Offline unprivileged checks
+verify the engine version, all machine definitions and the new task help.
+
 ## Source and validation
 
 [`nimbus.spec`](nimbus.spec) expects `nimbus-0.5.5-vendor.tar.gz`, containing the
