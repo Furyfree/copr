@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 4885f72e5bdc6e8f31514d92be9bdc27277b15e6f5998fcbbc42675539163537
+%global source_sha256 545f42b8231256c866310e34cfcc568f7f9ee6a5cb9f7326657ec31d0f717d48
 
 Name:           nimbus
-Version:        0.5.3
+Version:        0.5.4
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,11 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.4-0.1
+- Simplify maintenance previews, approvals and final reporting.
+- Scope setup inspection and add private versioned run diagnostics.
+- Correct status counts for non-package system checks.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.3-0.1
 - Enforce declared package sources for installation, repair and upgrades.
 - Configure constrained greeter sync during normal approved init and sync.
