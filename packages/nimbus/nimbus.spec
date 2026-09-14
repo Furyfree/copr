@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 545f42b8231256c866310e34cfcc568f7f9ee6a5cb9f7326657ec31d0f717d48
+%global source_sha256 de3b682f01b867a0c7ba2ff4fb9a0c4743db6bc6e9dd37e2cec58d93cc3a6a30
 
 Name:           nimbus
-Version:        0.5.4
+Version:        0.5.5
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.5-0.1
+- Create managed parent directories during first-time 1Password setup.
+- Use a concise change summary and offer a full diff without a pager.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.4-0.1
 - Simplify maintenance previews, approvals and final reporting.
 - Scope setup inspection and add private versioned run diagnostics.
