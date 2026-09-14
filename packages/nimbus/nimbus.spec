@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 c67b8f4265755a376d37a566880389de785ab85dd2371f3d87858625d6aee286
+%global source_sha256 a1729743a1d47776888895744d9c4cece9f74e99fa86dbfbb6982ba2ddb135e0
 
 Name:           nimbus
-Version:        0.5.6
+Version:        0.5.7
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.7-0.1
+- Guide initial Tailscale sign-in while preserving local operator permission.
+- Add approved, verified DTU eduroam CA installation for NetworkManager.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.6-0.1
 - Accept equivalent screen-adjusted lockscreen layouts after Noctalia restart.
 - Verify matching saved layouts without repeating the repair.
