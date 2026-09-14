@@ -520,6 +520,19 @@ vendored release build/tests passed. Push CI encountered the previously recorded
 terminal-cancellation flake; the unchanged rerun passed. Laptop testing through
 the installed Nimbus package remains an owner trial.
 
+[COPR build 10984982](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10984982/)
+and [publication](https://github.com/Furyfree/copr/actions/runs/34863980532)
+succeeded on an unchanged retry. Initial build 10984943 failed in the existing
+foreground-restoration test after its success marker; three local repetitions
+passed. The timing/reaping issue remains recorded in Nimbus tasks.
+
+Repository metadata contains `nimbus-0.5.6-0.1.fc44.x86_64`, SHA-256:
+`c71e3f552869b01c6b41693f9550306b661947d5d27fa8b1d79f5336e125855e`.
+Both RPM signatures/digests pass in an isolated keyring with only the pinned
+project key. The source RPM retains the reviewed archive/spec. Payload inspection
+finds only the engine and licenses, without scripts or triggers; offline
+unprivileged checks verify version, all machine definitions and command help.
+
 ## Source and validation
 
 [`nimbus.spec`](nimbus.spec) expects `nimbus-0.5.6-vendor.tar.gz`, containing the
