@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 d6f99a5b62e35f9b754b0b5b2475456e517ba437a09cc66170289f55f62fbc36
+%global source_sha256 4885f72e5bdc6e8f31514d92be9bdc27277b15e6f5998fcbbc42675539163537
 
 Name:           nimbus
-Version:        0.5.2
+Version:        0.5.3
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,12 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.3-0.1
+- Enforce declared package sources for installation, repair and upgrades.
+- Configure constrained greeter sync during normal approved init and sync.
+- Integrate UWSM launches and graceful Noctalia service handling.
+- Apply explicitly selected 1Password SSH/Git configuration through Chezmoi.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.2-0.1
 - Add guided local-agent proxy setup and owned model refresh after upgrades.
 - Add targeted Noctalia lockscreen repair and fix styling after prompts.
