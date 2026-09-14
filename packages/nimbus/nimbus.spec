@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 a1729743a1d47776888895744d9c4cece9f74e99fa86dbfbb6982ba2ddb135e0
+%global source_sha256 4da5ba421be8bc5ea8c9212dbbdad7935c26c142a8cab0510c2f9ee2b6414619
 
 Name:           nimbus
-Version:        0.5.7
+Version:        0.5.9
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.9-0.1
+- Fix terminal process-exit and interrupt-readiness test races.
+- Retain the Tailscale initial sign-in and DTU certificate setup changes.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.7-0.1
 - Guide initial Tailscale sign-in while preserving local operator permission.
 - Add approved, verified DTU eduroam CA installation for NetworkManager.
