@@ -461,9 +461,23 @@ version-attributed diagnostics, and corrects package/status counts.
 
 The verified archive SHA-256 is
 `545f42b8231256c866310e34cfcc568f7f9ee6a5cb9f7326657ec31d0f717d48`.
-The release workflow passed its checks and offline vendored build/tests.
-The complete offline packaging gate passes. Interactive desktop behavior
-remains an operator trial; packaging does not apply workstation configuration.
+All 353 tagged files match; 754 vendored files and notices are unchanged from
+0.5.3. The release workflow passed its checks and offline vendored build/tests.
+The complete offline packaging gate and source-RPM rebuild pass.
+
+[COPR build 10984708](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10984708/)
+published `nimbus-0.5.4-0.1.fc44.x86_64` through the successful
+[publication workflow](https://github.com/Furyfree/copr/actions/runs/34857112822).
+Repository metadata and checksums match. Binary and source RPM signatures and
+digests pass against only the pinned project key in an isolated RPM database.
+Binary RPM SHA-256 is
+`18dff1db76097a9678ca241df58a8fdf4fbc71a53ed5a0727ba9ae32adf22c8a`.
+
+The source RPM preserves the exact archive and reviewed spec. The binary holds
+only Nimbus and license files, with no scripts or triggers. An offline,
+unprivileged container verifies version 0.5.4, all three tagged definitions and
+command help. Interactive desktop behavior remains an operator trial; packaging
+does not apply workstation configuration.
 
 ## Source and validation
 
