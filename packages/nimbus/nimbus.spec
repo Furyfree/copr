@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 4da5ba421be8bc5ea8c9212dbbdad7935c26c142a8cab0510c2f9ee2b6414619
+%global source_sha256 4f0959aef43e994fb63a59f12f87e6d2c2255785b6abeab60f6d3cd9257e29d3
 
 Name:           nimbus
-Version:        0.5.9
+Version:        0.5.10
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
@@ -63,6 +63,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 
 %changelog
+* Mon Sep 14 2026 Nimbus maintainers - 0.5.10-0.1
+- Verify DTU certificate labels through native SELinux checks.
+- Report specific certificate metadata and labeling failures.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.9-0.1
 - Fix terminal process-exit and interrupt-readiness test races.
 - Retain the Tailscale initial sign-in and DTU certificate setup changes.
