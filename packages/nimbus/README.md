@@ -439,6 +439,14 @@ SRPM rebuild pass. The SRPM contains the exact published archive and reviewed
 spec. Local native tests verify greeter-rule lifecycle and service timeout
 behavior; visual wallpaper sync and laptop installation remain operator checks.
 
+[COPR build 10984155](https://copr.fedorainfracloud.org/coprs/furyfree/nimbus/build/10984155/)
+is submitted through the
+[publication workflow](https://github.com/Furyfree/copr/actions/runs/34846942114).
+Source import succeeded; COPR is waiting to allocate its build VM. The published
+source RPM retains the exact archive and reviewed spec. Full and selected-package
+CI passed. Signed binary publication, signature/payload verification and
+extracted-binary checks remain pending. No host package upgrade was performed.
+
 ## Source and validation
 
 [`nimbus.spec`](nimbus.spec) expects `nimbus-0.5.3-vendor.tar.gz`, containing the
