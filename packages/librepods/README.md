@@ -7,6 +7,13 @@ Its source archive is pinned by SHA-256 in the spec. Compilation and the upstrea
 CTest suite run offline with disposable configuration, state and cache paths.
 The bundled QR code library's MIT notice is included alongside the GPL license.
 
+Release 2 applies `librepods-fix-a2dp-profile-selection.patch` to this snapshot.
+It identifies playback profiles by their A2DP names and accepts the input source
+that WirePlumber can expose alongside stereo playback. This prevents those valid
+profiles from being rejected and sent through the daemon's audio recovery path.
+The patch includes a sanitized Fedora 44 profile fixture and non-playback
+exclusion tests. Remove it when a future pinned source includes the fix.
+
 The fork supplies the status JSON and extended control commands required by
 Noctalia's `harveywuk/airpods` widget. It also supplies `--headless`, which creates
 neither a tray icon nor the graphical window. The standard LibrePods desktop
@@ -16,14 +23,14 @@ entry remains available for deliberate GUI use.
 
 ~~~sh
 just prepare librepods /tmp/librepods-srpm
-rpmbuild --rebuild /tmp/librepods-srpm/librepods-20260826-1.fc44.src.rpm
+rpmbuild --rebuild /tmp/librepods-srpm/librepods-20260826-2.fc44.src.rpm
 just publish librepods
 ~~~
 
 Source preparation may download the pinned archive. Run the binary rebuild in
 the Fedora environment from `build/Containerfile`, with networking disabled.
-`publish` is a separate, explicit action against remote main. This recipe has
-not yet been published; adding it does not enable a repository on a workstation.
+`publish` is a separate, explicit action against remote main. Adding this recipe
+does not enable a repository on a workstation.
 
 ## Session startup
 
@@ -59,6 +66,19 @@ real AirPods connectivity or validate a live service upgrade.
 ## Validation
 
 The Fedora 44 tools image built the source RPM and rebuilt it with networking
-disabled. All 19 upstream CTest cases passed. The repository's complete
+disabled. All 19 CTest targets passed, including the release 2 profile-selection
+regressions. Both new regression cases failed against the unpatched selector
+and passed with the patch. The repository's complete
 `just check` gate also passed in that image with networking disabled, including
 the integration-tagged Go suite and RPM spec validation.
+
+Live Fedora 44 checks with AirPods Pro 2 passed two 45-second pause/resume
+cycles, disconnect/reconnect through `librepods-ctl`, automatic microphone
+profile selection, preservation of live capture during daemon startup, and
+return to SBC-XQ after capture ended. WirePlumber did not restart. Microphone
+data was discarded; these checks establish routing, not recorded sound quality.
+
+ANC, Adaptive, Transparency and ear-detection policy commands were acknowledged.
+The noise Off command remained at Transparency in the single-earbud test;
+the device's separate Off Listening Mode setting was not verified. Physical
+ear-removal auto-pause and audible sound quality still require manual testing.

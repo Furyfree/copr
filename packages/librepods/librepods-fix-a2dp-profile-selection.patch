@@ -1,0 +1,155 @@
+Subject: Identify A2DP playback profiles independently of input count
+
+WirePlumber can expose a Bluetooth input loopback while A2DP is active.
+Rejecting every profile with a source leaves working stereo profiles out
+of the selection and triggers the daemon's WirePlumber recovery path.
+
+Match the playback profile name, retaining output/availability checks and
+codec ranking. Add the Fedora 44 profile layout and reject non-playback
+names independently of their reported input count. Use A2DP names in the
+existing codec-ranking fixtures.
+
+Applies to harveywuk/librepods 4ed49df0b301ac3e6fba9c81dfbbb6726cc52201.
+
+diff --git a/media/profilechoice.hpp b/media/profilechoice.hpp
+index 36a9209..b54336a 100644
+--- a/media/profilechoice.hpp
++++ b/media/profilechoice.hpp
+@@ -61,14 +61,15 @@ inline QString profileDescription(const QVector<ProfileCandidate> &candidates, c
+     return QString();
+ }
+
+-// A profile carrying a source is the headset mic path, never the playback one.
++// WirePlumber can expose a Bluetooth input loopback even while A2DP playback is active.
+ inline QString bestPlaybackProfile(const QVector<ProfileCandidate> &candidates)
+ {
+     QString best;
+     int bestBitrate = -1;
+     int bestPriority = -1;
+     for (const ProfileCandidate &c : candidates) {
+-        if (!c.available || c.sinks == 0 || c.sources > 0) {
++        const bool playback = c.name == "a2dp-sink" || c.name.startsWith("a2dp-sink-");
++        if (!c.available || c.sinks == 0 || !playback) {
+             continue;
+         }
+         // The name survives a translated locale, so it is tried first and the description backs it up.
+diff --git a/tests/tst_profilechoice.cpp b/tests/tst_profilechoice.cpp
+index cca4d2d..20c2890 100644
+--- a/tests/tst_profilechoice.cpp
++++ b/tests/tst_profilechoice.cpp
+@@ -11,6 +11,8 @@ private slots:
+     void picksHighestBitrateNotHighestPriority();
+     void unknownCodecsFallBackToPriority();
+     void skipsHeadsetProfilesThatCarryASource();
++    void acceptsPlaybackProfilesWithASource();
++    void skipsNonPlaybackProfilesWithoutASource();
+     void skipsUnavailableProfiles();
+     void skipsProfilesWithNoSink();
+     void returnsEmptyWhenNothingQualifies();
+@@ -40,48 +42,48 @@ void TestProfileChoice::unknownCodecsFallBackToPriority()
+ {
+     // An unknown codec scores 0 bitrate, so PipeWire's priority breaks the tie.
+     QVector<ProfileCandidate> unknownCodecs = {
+-        {"vendor-alpha", "Vendor Playback (A2DP Sink, codec MYSTERY)", 12, true, 1, 0},
+-        {"vendor-beta", "Vendor Playback (A2DP Sink, codec LDAC)", 99, true, 1, 0},
++        {"a2dp-sink-vendor-alpha", "Vendor Playback (A2DP Sink, codec MYSTERY)", 12, true, 1, 0},
++        {"a2dp-sink-vendor-beta", "Vendor Playback (A2DP Sink, codec LDAC)", 99, true, 1, 0},
+     };
+-    QCOMPARE(bestPlaybackProfile(unknownCodecs), QString("vendor-beta"));
++    QCOMPARE(bestPlaybackProfile(unknownCodecs), QString("a2dp-sink-vendor-beta"));
+
+     // Same tie the other way round, so an order-sensitive comparison cannot pass both.
+     QVector<ProfileCandidate> unknownCodecsReversed = {
+-        {"vendor-beta", "Vendor Playback (A2DP Sink, codec LDAC)", 99, true, 1, 0},
+-        {"vendor-alpha", "Vendor Playback (A2DP Sink, codec MYSTERY)", 12, true, 1, 0},
++        {"a2dp-sink-vendor-beta", "Vendor Playback (A2DP Sink, codec LDAC)", 99, true, 1, 0},
++        {"a2dp-sink-vendor-alpha", "Vendor Playback (A2DP Sink, codec MYSTERY)", 12, true, 1, 0},
+     };
+-    QCOMPARE(bestPlaybackProfile(unknownCodecsReversed), QString("vendor-beta"));
++    QCOMPARE(bestPlaybackProfile(unknownCodecsReversed), QString("a2dp-sink-vendor-beta"));
+
+     // Two candidates equal on bitrate and on priority must resolve the same way either way round.
+     QVector<ProfileCandidate> equalOnBoth = {
+-        {"first-seen", "Vendor Playback (A2DP Sink, codec MYSTERY)", 50, true, 1, 0},
+-        {"second-seen", "Vendor Playback (A2DP Sink, codec ENIGMA)", 50, true, 1, 0},
++        {"a2dp-sink-first-seen", "Vendor Playback (A2DP Sink, codec MYSTERY)", 50, true, 1, 0},
++        {"a2dp-sink-second-seen", "Vendor Playback (A2DP Sink, codec ENIGMA)", 50, true, 1, 0},
+     };
+-    QCOMPARE(bestPlaybackProfile(equalOnBoth), QString("first-seen"));
++    QCOMPARE(bestPlaybackProfile(equalOnBoth), QString("a2dp-sink-first-seen"));
+     QVector<ProfileCandidate> equalOnBothReversed = {
+-        {"second-seen", "Vendor Playback (A2DP Sink, codec ENIGMA)", 50, true, 1, 0},
+-        {"first-seen", "Vendor Playback (A2DP Sink, codec MYSTERY)", 50, true, 1, 0},
++        {"a2dp-sink-second-seen", "Vendor Playback (A2DP Sink, codec ENIGMA)", 50, true, 1, 0},
++        {"a2dp-sink-first-seen", "Vendor Playback (A2DP Sink, codec MYSTERY)", 50, true, 1, 0},
+     };
+-    QCOMPARE(bestPlaybackProfile(equalOnBothReversed), QString("second-seen"));
++    QCOMPARE(bestPlaybackProfile(equalOnBothReversed), QString("a2dp-sink-second-seen"));
+
+     // AAC's own row: it must outscore an unknown codec that outranks it on priority.
+     QVector<ProfileCandidate> aacVersusUnknown = {
+-        {"vendor-mystery", "Vendor Playback (A2DP Sink, codec MYSTERY)", 500, true, 1, 0},
++        {"a2dp-sink-vendor-mystery", "Vendor Playback (A2DP Sink, codec MYSTERY)", 500, true, 1, 0},
+         {"a2dp-sink", "High Fidelity Playback (A2DP Sink, codec AAC)", 133, true, 1, 0},
+     };
+     QCOMPARE(bestPlaybackProfile(aacVersusUnknown), QString("a2dp-sink"));
+
+     // A known codec always beats an unknown one, whatever the names say.
+     QVector<ProfileCandidate> knownVersusUnknown = {
+-        {"zzz-vendor", "Vendor Playback (A2DP Sink, codec MYSTERY)", 500, true, 1, 0},
+-        {"aaa-vendor", "High Fidelity Playback (A2DP Sink, codec AAC)", 1, true, 1, 0},
++        {"a2dp-sink-zzz-vendor", "Vendor Playback (A2DP Sink, codec MYSTERY)", 500, true, 1, 0},
++        {"a2dp-sink-aaa-vendor", "High Fidelity Playback (A2DP Sink, codec AAC)", 1, true, 1, 0},
+     };
+-    QCOMPARE(bestPlaybackProfile(knownVersusUnknown), QString("aaa-vendor"));
++    QCOMPARE(bestPlaybackProfile(knownVersusUnknown), QString("a2dp-sink-aaa-vendor"));
+ }
+
+ void TestProfileChoice::skipsHeadsetProfilesThatCarryASource()
+ {
+-    // Best codec and top priority here, so only the source term can reject the headset.
++    // A headset profile must stay excluded even if its codec and priority rank highest.
+     QVector<ProfileCandidate> headsetRanksHighest = {
+         {"headset-head-unit", "Headset Head Unit (HSP/HFP, codec SBC-XQ)", 200, true, 1, 1},
+         {"a2dp-sink", "High Fidelity Playback (A2DP Sink, codec AAC)", 133, true, 1, 0},
+@@ -89,6 +91,40 @@ void TestProfileChoice::skipsHeadsetProfilesThatCarryASource()
+     QCOMPARE(bestPlaybackProfile(headsetRanksHighest), QString("a2dp-sink"));
+ }
+
++void TestProfileChoice::acceptsPlaybackProfilesWithASource()
++{
++    // Fedora 44 with WirePlumber's Bluetooth input loopback exposes a source even in A2DP.
++    QVector<ProfileCandidate> profiles = {
++        {"off", "Off", 0, true, 0, 0},
++        {"a2dp-sink-sbc", "High Fidelity Playback (A2DP Sink, codec SBC)", 133, true, 1, 1},
++        {"a2dp-sink-sbc_xq", "High Fidelity Playback (A2DP Sink, codec SBC-XQ)", 132, true, 1, 1},
++        {"a2dp-sink", "High Fidelity Playback (A2DP Sink, codec AAC)", 134, true, 1, 1},
++        {"headset-head-unit-cvsd", "Headset Head Unit (HSP/HFP, codec CVSD)", 5, true, 1, 1},
++        {"headset-head-unit-msbc", "Headset Head Unit (HSP/HFP, codec MSBC)", 6, true, 1, 1},
++        {"headset-head-unit", "Headset Head Unit (HSP/HFP, codec LC3-24kHz)", 7, true, 1, 1},
++    };
++    QCOMPARE(bestPlaybackProfile(profiles), QString("a2dp-sink-sbc_xq"));
++    for (ProfileCandidate &profile : profiles) {
++        if (profile.name == "a2dp-sink-sbc_xq") profile.available = false;
++    }
++    QCOMPARE(bestPlaybackProfile(profiles), QString("a2dp-sink-sbc"));
++    for (ProfileCandidate &profile : profiles) {
++        if (profile.name == "a2dp-sink-sbc") profile.available = false;
++    }
++    QCOMPARE(bestPlaybackProfile(profiles), QString("a2dp-sink"));
++}
++
++void TestProfileChoice::skipsNonPlaybackProfilesWithoutASource()
++{
++    QVector<ProfileCandidate> profiles = {
++        {"headset-head-unit", "Headset Head Unit", 999, true, 1, 0},
++        {"a2dp-source", "High Fidelity Capture", 999, true, 1, 0},
++        {"a2dp-sinkless", "Unrelated profile", 999, true, 1, 0},
++        {"a2dp-sink", "Translated playback description", 134, true, 1, 0},
++    };
++    QCOMPARE(bestPlaybackProfile(profiles), QString("a2dp-sink"));
++}
++
+ void TestProfileChoice::skipsUnavailableProfiles()
+ {
+     QVector<ProfileCandidate> sbcXqUnavailable = airPodsCard();

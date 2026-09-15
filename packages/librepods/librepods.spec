@@ -3,12 +3,13 @@
 
 Name:           librepods
 Version:        20260826
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        AirPods daemon with Noctalia status and control integration
 License:        GPL-3.0-only AND MIT
 URL:            https://github.com/harveywuk/librepods
 Source0:        https://github.com/harveywuk/librepods/archive/%{commit}/librepods-%{commit}.tar.gz
 Source1:        librepods.service
+Patch0:         librepods-fix-a2dp-profile-selection.patch
 ExclusiveArch:  x86_64
 BuildRequires:  gcc-c++
 BuildRequires:  cmake
@@ -33,7 +34,7 @@ The user service follows Fedora presets and is not started on installation.
 
 %prep
 printf '%s  %s\n' '%{source_sha256}' '%{SOURCE0}' | sha256sum --check --strict
-%autosetup -n librepods-%{commit}
+%autosetup -p1 -n librepods-%{commit}
 
 %build
 %cmake -DBUILD_TESTING=ON
@@ -75,5 +76,9 @@ install -Dpm 0644 %{SOURCE1} %{buildroot}%{_userunitdir}/librepods.service
 %{_datadir}/openpods/translations/
 
 %changelog
+* Tue Sep 15 2026 Patrick Byrne <pby.accounts@byrne.dk> - 20260826-2
+- Accept A2DP playback profiles that expose a Bluetooth input loopback.
+- Add regression coverage for profile selection with an input source.
+
 * Sat Sep 12 2026 Patrick Byrne <pby.accounts@byrne.dk> - 20260826-1
 - Package the pinned Noctalia-compatible fork with its headless user service.
