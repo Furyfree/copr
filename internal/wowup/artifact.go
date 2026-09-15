@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 const maxArtifact = 1024 * 1024 * 1024
 
 var stableVersion = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
@@ -150,10 +150,10 @@ func checkArtifact(path, digest string) error {
 	return nil
 }
 
-func (e *Installer) Prepare(ctx context.Context, directory, version string) (Artifact, error) {
+func (e *Installer) resolve(ctx context.Context, version string) (Artifact, int64, error) {
 	var result Artifact
 	if version != "" && !stableVersion.MatchString(version) {
-		return result, errors.New("invalid stable application version")
+		return result, 0, errors.New("invalid stable application version")
 	}
 	endpoint := "latest"
 	if version != "" {
@@ -161,7 +161,7 @@ func (e *Installer) Prepare(ctx context.Context, directory, version string) (Art
 	}
 	data, err := e.fetch(ctx, "https://api.github.com/repos/WowUp/WowUp.CF/releases/"+endpoint, "", 0)
 	if err != nil {
-		return result, err
+		return result, 0, err
 	}
 	var release struct {
 		Tag        string `json:"tag_name"`
@@ -175,11 +175,11 @@ func (e *Installer) Prepare(ctx context.Context, directory, version string) (Art
 		} `json:"assets"`
 	}
 	if err := json.Unmarshal(data, &release); err != nil {
-		return result, err
+		return result, 0, err
 	}
 	selected := strings.TrimPrefix(release.Tag, "v")
 	if release.Draft == nil || *release.Draft || release.Prerelease == nil || *release.Prerelease || release.Tag != "v"+selected || !stableVersion.MatchString(selected) || version != "" && selected != version {
-		return result, errors.New("metadata must describe selected published stable release")
+		return result, 0, errors.New("metadata must describe selected published stable release")
 	}
 	count := 0
 	var digest string
@@ -190,13 +190,27 @@ func (e *Installer) Prepare(ctx context.Context, directory, version string) (Art
 			digest = strings.TrimPrefix(asset.Digest, "sha256:")
 			size = asset.Size
 			if asset.URL != sourceURL(selected) || asset.Digest != "sha256:"+digest || !digestPattern.MatchString(digest) {
-				return result, errors.New("release asset has invalid source or SHA-256")
+				return result, 0, errors.New("release asset has invalid source or SHA-256")
 			}
 		}
 	}
 	if count != 1 || size < 64 || size > maxArtifact {
-		return result, errors.New("release requires exactly one valid-sized official CF AppImage")
+		return result, 0, errors.New("release requires exactly one valid-sized official CF AppImage")
 	}
+	return Artifact{1, selected, "wowup-cf", "x86_64", digest, "", sourceURL(selected)}, size, nil
+}
+
+func (e *Installer) Prepare(ctx context.Context, directory, version string) (Artifact, error) {
+	a, size, err := e.resolve(ctx, version)
+	if err != nil {
+		return Artifact{}, err
+	}
+	return e.prepare(ctx, directory, a, size)
+}
+
+func (e *Installer) prepare(ctx context.Context, directory string, a Artifact, size int64) (Artifact, error) {
+	var result Artifact
+	var err error
 	directory, err = filepath.Abs(directory)
 	if err != nil {
 		return result, err
@@ -215,15 +229,16 @@ func (e *Installer) Prepare(ctx context.Context, directory, version string) (Art
 			os.RemoveAll(stage)
 		}
 	}()
-	artifact := filepath.Join(stage, "WowUp-CF-"+selected+".AppImage")
-	if _, err := e.fetch(ctx, sourceURL(selected), artifact, size); err != nil {
+	artifact := filepath.Join(stage, "WowUp-CF-"+a.Version+".AppImage")
+	if _, err := e.fetch(ctx, a.Source, artifact, size); err != nil {
 		return result, err
 	}
-	if err := checkArtifact(artifact, digest); err != nil {
+	if err := checkArtifact(artifact, a.SHA256); err != nil {
 		return result, err
 	}
 	keep = true
-	return Artifact{1, selected, "wowup-cf", "x86_64", digest, artifact, sourceURL(selected)}, nil
+	a.Path = artifact
+	return a, nil
 }
 
 func older(candidate, installed string) bool {

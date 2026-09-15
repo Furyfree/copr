@@ -27,6 +27,7 @@ type Installer struct {
 	uid, gid               uint32
 	fixtureRoot            string
 	client                 *http.Client
+	release                func() (Artifact, error)
 	extract                func(context.Context, string, string) error
 	mkdir                  func(string, os.FileMode) error
 	remove                 func(string) error
@@ -34,7 +35,7 @@ type Installer struct {
 }
 
 func New() *Installer {
-	return &Installer{app: "/opt/wowup-cf", removing: "/opt/.nimbus-wowup-cf-removing", journal: "/opt/.nimbus-wowup-cf-removal.json", links: []link{{"/usr/local/bin/wowup-cf", "/opt/wowup-cf/launcher"}, {"/usr/local/share/applications/wowup-cf.desktop", "/opt/wowup-cf/wowup-cf.desktop"}}, client: httpClient(), extract: nativeExtract, mkdir: os.Mkdir, remove: os.Remove, syncDir: syncDirectory}
+	return &Installer{app: "/opt/wowup-cf", removing: "/opt/.nimbus-wowup-cf-removing", journal: "/opt/.nimbus-wowup-cf-removal.json", links: []link{{"/usr/local/bin/wowup-cf", "/opt/wowup-cf/launcher"}, {"/usr/local/share/applications/wowup-cf.desktop", "/opt/wowup-cf/wowup-cf.desktop"}}, client: httpClient(), release: PackagedRelease, extract: nativeExtract, mkdir: os.Mkdir, remove: os.Remove, syncDir: syncDirectory}
 }
 
 type Status struct {
@@ -266,6 +267,11 @@ func (e *Installer) Apply(ctx context.Context, artifact, digest, version string)
 		return result, err
 	}
 	defer lock.Close()
+	return e.apply(ctx, artifact, digest, version)
+}
+
+// apply requires the caller to hold the operation lock.
+func (e *Installer) apply(ctx context.Context, artifact, digest, version string) (result Status, err error) {
 	pending, err := e.removalPending()
 	if err != nil {
 		return result, err

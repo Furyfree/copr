@@ -1,7 +1,13 @@
-.TH WOWUP-CF-INSTALLER 1 "September 2026" "wowup-cf-installer 0.1.0"
+.TH WOWUP-CF-INSTALLER 1 "September 2026" "wowup-cf-installer 0.2.0"
 .SH NAME
 wowup-cf-installer \- verified official WoWUp CurseForge application delivery
 .SH SYNOPSIS
+.B wowup-cf-installer install --assumeyes
+.br
+.B wowup-cf-installer update --assumeyes
+.br
+.B wowup-cf-installer release --json
+.br
 .B wowup-cf-installer prepare --directory
 .I DIR
 .RB [ --app-version " VERSION"]
@@ -21,10 +27,31 @@ wowup-cf-installer \- verified official WoWUp CurseForge application delivery
 .B wowup-cf-installer --version
 .SH DESCRIPTION
 This helper targets Fedora 44 x86_64. The helper RPM contains no application
-payload. Installing, upgrading or removing the RPM does not implicitly download,
-update or remove the application. DNF updates the helper; application updates
-require explicit preparation and approved application of the chosen artifact.
+payload. Installing, reinstalling or upgrading the RPM automatically queues a
+one-shot systemd job that downloads and installs the package-selected WoWUp
+release. No second installer command is required. DNF completion reports queuing,
+not application readiness. Check systemctl status wowup-cf-installer.service
+and journalctl -u wowup-cf-installer.service for completion or failures.
+The job waits for the DNF transaction and retries failed operations at
+60-second intervals, limited to three starts in 15 minutes. Reinstalling the
+helper queues a fresh attempt after a persistent problem is fixed.
+Application updates arrive through new helper RPM release selections.
+Final DNF package removal stops the job and its retries, then removes the
+verified application bundle and desktop integration. Upgrades and reinstalls
+do not uninstall the app. A stop, ownership or cleanup failure prevents erasing
+the helper, allowing a later retry. Settings, games and addons are retained.
 .SH COMMANDS
+.TP
+.B install, update
+Require root and --assumeyes. Reconcile the release selected by the signed
+helper package. Verify existing ownership before network access. A current,
+verified installation is unchanged; missing known links can be repaired
+offline. Refuse downgrades, changed release metadata and conflicting ownership.
+Download the exact official AppImage and apply it using the same verification
+and ownership rules as prepare/apply. Print installed-state JSON.
+.TP
+.B release
+Print the package-selected version, source and SHA-256 as JSON, offline.
 .TP
 .B prepare
 Run without root. Download the latest stable official CurseForge AppImage, or
@@ -73,12 +100,12 @@ Owned pending-removal bundle. These established paths retain their original
 Nimbus names for lifecycle compatibility.
 .SH NOTES
 The launcher clears AppImage updater environment variables, preserving addon
-updates and Chromium sandboxing. There is no timer, daemon or background update
-service. Bundle exchange is atomic; the complete install or removal transaction
+updates and Chromium sandboxing. The one-shot job runs on package changes,
+not periodically or at every boot. Bundle exchange is atomic; the complete install or removal transaction
 is not. Missing known links and interrupted removal can be retried, while
 unknown ownership or modified files require inspection. Empty parent directories
-remain after removal. Remove the application explicitly before removing its
-helper if both should be removed.
+remain after removal. DNF removal invokes the verified uninstall operation
+automatically; standalone uninstall remains available for app-only removal.
 .SH EXIT STATUS
 Zero indicates success. Nonzero indicates invalid input, unsupported platform,
 unverified ownership or a failed operation. SIGTERM and keyboard interruption

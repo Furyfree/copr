@@ -6,18 +6,71 @@ The helper originated in Nimbus's local desktop-delivery work; the original
 Copyright (c) 2026 Patrick Byrne notice is preserved in `LICENSE`. Builds use
 these local sources and do not fetch or redistribute the application.
 
-Local candidate 0.1.0 targets Fedora 44 x86_64. Nothing has been published and
-no COPR project or signing key has been established for this package yet.
-Create or build the project only after review and explicit publication approval;
-verify its key and signed RPM before adding the repository to Nimbus.
+Published **0.1.0-0.1** is available for Fedora 44 x86_64 in
+[`furyfree/wowup-cf-installer`](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/),
+[COPR build 10972053](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/build/10972053/).
+That release requires explicit helper invocation. Candidate **0.2.0** adds the
+automatic package lifecycle below and has not yet been published.
 
-COPR/DNF updates `wowup-cf-installer` independently of Nimbus. Nimbus invokes
-`/usr/bin/wowup-cf-installer` for preparation, inspection, approved application
-updates and removal. Installing or upgrading the helper RPM only updates the
-helper and its declared dependencies: it does not download or update WoWUp.
-The package has no RPM scriptlets or triggers. Before removing the helper,
-explicitly uninstall the application if desired; removing only the helper
-leaves the app, launcher and user data in place.
+## Installation and updates (0.2.0)
+
+After the candidate is published:
+
+~~~sh
+sudo dnf copr enable furyfree/wowup-cf-installer
+sudo dnf install wowup-cf-installer
+~~~
+
+Installing, reinstalling or upgrading the helper automatically queues a one-shot
+systemd job to download the official AppImage, verify it and create the launcher
+and desktop entry. No second installer command is required. Start **WoWUp with
+CurseForge** from the application menu after the job finishes.
+
+DNF completion means the job was queued, not that the app download succeeded.
+Inspect completion or a failed download with:
+
+~~~sh
+systemctl status wowup-cf-installer.service
+journalctl -u wowup-cf-installer.service
+wowup-cf-installer status --json
+~~~
+
+The job waits for the current DNF transaction, retries failures at 60-second
+intervals with at most three starts in 15 minutes, and reports failures through
+systemd. After fixing a persistent problem, `sudo dnf reinstall
+wowup-cf-installer` queues another attempt. Offline image/chroot installation
+cannot start the job; reinstall the helper after booting with systemd running.
+This is not a boot-enabled service or a periodic updater.
+
+The signed helper package selects an application version and SHA-256. Publishing
+an updated selection advances the RPM release, so `sudo dnf upgrade` triggers
+the next application update. WoWUp's own application updater stays disabled;
+addon updates remain inside WoWUp. `wowup-cf-installer release --json` reports
+the selected release offline. A fully verified current install needs no download
+or replacement; missing known desktop links can be repaired from the retained
+artifact while offline. A failed download or extraction preserves the previous
+installation. Unknown or modified files block replacement.
+
+The helper owns the app lifecycle outside RPM's file inventory; COPR contains
+only the open-source installer and release metadata.
+
+~~~sh
+sudo dnf remove wowup-cf-installer
+~~~
+
+Final package removal first stops the installer job and its pending retries,
+then removes the verified app bundle, launcher and desktop entry. Upgrades and
+reinstalls do not remove the app. If stopping the job, verifying ownership or
+cleaning up fails, RPM refuses to erase the helper so removal can be retried
+after resolving the problem. Interrupted cleanup resumes from its ownership
+journal. Home directories, application settings, WoW installations and addons
+are always retained. The standalone `uninstall --assumeyes` command remains
+available for explicit app-only removal.
+
+Nimbus may install this package through its normal DNF flow. Existing
+prepare/apply/status/uninstall interfaces and receipts remain compatible.
+Standalone `install --assumeyes` and `update --assumeyes` reconcile the
+package-selected release, but are not required for normal package installation.
 
 The owner approved the official CurseForge AppImage with GitHub's SHA-256 and
 an exception limited to this artifact source. These checks identify the
@@ -156,7 +209,9 @@ checks. A passing ownership test does not establish those runtime results.
 Run the repository's `just check` in its network-disabled Fedora tooling
 container. It builds this package's SRPM and binary RPM, runs all helper
 fixtures, checks the payload, version, dependency declarations and MIT notice,
-and verifies the absence of RPM scriptlets and triggers.
+and verifies the deferred installer scriptlets and service. It also tests
+package-pinned updates, offline reruns, rejected release changes and retries.
+A real systemd-host install/upgrade/retry drill remains an acceptance check.
 
 To retain a source RPM with the native tooling available:
 
@@ -164,12 +219,15 @@ To retain a source RPM with the native tooling available:
 just prepare wowup-cf-installer /tmp/wowup-cf-installer-srpm
 ~~~
 
-After review and merge, select `package=wowup-cf-installer` and
-`operation=project` or `operation=build` in the manual COPR workflow. Source
+After review and merge, `just publish wowup-cf-installer` resolves the latest
+stable official release metadata and builds the helper with that version and
+SHA-256. It does not download or bundle the application on COPR. Local
+`prepare` uses the checked-in release pin; add `--latest` to the `coprctl
+prepare` command to resolve current metadata without publishing. Source
 preparation bundles this helper and its required Go modules; binary builds are
-offline. The installed helper needs no Python runtime.
-No upstream API credential is needed. Update the Go helper version constant, spec and
-manual together. See the [publishing workflow](../../README.md#workflow).
+offline. The installed helper needs no Python runtime or upstream API credential.
+Update the Go helper version constant, spec and manual together. See
+[publishing](../../README.md#publishing).
 
 ## Why the application is downloaded separately
 

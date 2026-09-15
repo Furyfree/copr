@@ -11,6 +11,7 @@ import (
 
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/packaging"
+	"github.com/Furyfree/copr/internal/wowup"
 )
 
 func run(ctx context.Context, args []string) error {
@@ -30,15 +31,27 @@ func run(ctx context.Context, args []string) error {
 	}
 	switch args[0] {
 	case "prepare":
-		if len(args) == 4 && args[1] == "github-copilot-installer" && args[3] == "--latest" {
-			a, err := copilot.LatestRelease(ctx)
-			if err != nil {
-				return err
+		if len(args) == 4 && args[3] == "--latest" {
+			switch args[1] {
+			case "github-copilot-installer":
+				a, err := copilot.LatestRelease(ctx)
+				if err != nil {
+					return err
+				}
+				b.CopilotRelease = &a
+				fmt.Fprintf(os.Stderr, "Selected Copilot %s, SHA-256 %s\n", a.Version, a.SHA256)
+			case "wowup-cf-installer":
+				a, err := wowup.LatestRelease(ctx)
+				if err != nil {
+					return err
+				}
+				b.WowupRelease = &a
+				fmt.Fprintf(os.Stderr, "Selected WoWUp-CF %s, SHA-256 %s\n", a.Version, a.SHA256)
+			default:
+				return fmt.Errorf("--latest is supported only for installer packages")
 			}
-			b.CopilotRelease = &a
-			fmt.Fprintf(os.Stderr, "Selected Copilot %s, SHA-256 %s\n", a.Version, a.SHA256)
 		} else if len(args) != 3 {
-			return fmt.Errorf("prepare requires PACKAGE OUTDIR [--latest for github-copilot-installer]")
+			return fmt.Errorf("prepare requires PACKAGE OUTDIR [--latest for installer packages]")
 		}
 		path, err := b.Prepare(ctx, args[1], args[2])
 		if err == nil {

@@ -136,7 +136,7 @@ func TestWorkflowCheckRouting(t *testing.T) {
 	}
 }
 
-func TestWorkflowSelectsLatestCopilotOnly(t *testing.T) {
+func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 	root := repository(t)
 	data, err := os.ReadFile(filepath.Join(root, ".github/workflows/copr.yml"))
 	if err != nil {
@@ -166,7 +166,7 @@ func TestWorkflowSelectsLatestCopilotOnly(t *testing.T) {
 				t.Fatalf("preparation failed: %v %s", err, out)
 			}
 			want := "prepare\n" + name + "\n/output\n"
-			if name == "github-copilot-installer" {
+			if name == "github-copilot-installer" || name == "wowup-cf-installer" {
 				want += "--latest\n"
 			}
 			if !strings.HasSuffix(string(out), want) {

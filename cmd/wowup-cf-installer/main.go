@@ -21,7 +21,7 @@ func run(ctx context.Context, args []string) error {
 		return nil
 	}
 	if len(args) == 0 {
-		return errors.New("expected prepare, apply, status or uninstall")
+		return errors.New("expected install, update, prepare, apply, release, status or uninstall")
 	}
 	f := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	var directory, version, artifact, digest string
@@ -35,12 +35,12 @@ func run(ctx context.Context, args []string) error {
 		f.StringVar(&digest, "sha256", "", "approved SHA-256")
 		f.StringVar(&version, "app-version", "", "approved version")
 		f.BoolVar(&yes, "assumeyes", false, "approved mutation")
-	case "uninstall":
-		f.BoolVar(&yes, "assumeyes", false, "approved removal")
-	case "status":
-		f.Bool("json", false, "print status JSON")
+	case "install", "update", "uninstall":
+		f.BoolVar(&yes, "assumeyes", false, "approved mutation")
+	case "release", "status":
+		f.Bool("json", false, "print JSON")
 	case "--help", "-h", "help":
-		fmt.Println("wowup-cf-installer prepare --directory DIR [--app-version VERSION]\n  apply --appimage FILE --sha256 HEX --app-version VERSION --assumeyes\n  status --json\n  uninstall --assumeyes")
+		fmt.Println("wowup-cf-installer install --assumeyes\n  update --assumeyes\n  release --json\n  prepare --directory DIR [--app-version VERSION]\n  apply --appimage FILE --sha256 HEX --app-version VERSION --assumeyes\n  status --json\n  uninstall --assumeyes")
 		return nil
 	default:
 		return errors.New("unknown command")
@@ -78,6 +78,13 @@ func run(ctx context.Context, args []string) error {
 			return errors.New("apply requires --appimage, --sha256, --app-version and --assumeyes")
 		}
 		result, err = e.Apply(ctx, artifact, digest, version)
+	case "install", "update":
+		if !yes {
+			return errors.New("install/update requires --assumeyes")
+		}
+		result, err = e.Install(ctx)
+	case "release":
+		result, err = wowup.PackagedRelease()
 	case "uninstall":
 		if !yes {
 			return errors.New("uninstall requires --assumeyes")

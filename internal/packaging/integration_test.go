@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/wowup"
 )
 
 func native(t *testing.T, dir, name string, args ...string) []byte {
@@ -50,6 +51,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			if name == "github-copilot-installer" {
 				b.CopilotRelease = &copilot.Artifact{SchemaVersion: 1, Version: "1.1.18", Name: "github", Arch: "x86_64", SHA256: strings.Repeat("b", 64), Source: "https://github.com/github/app/releases/download/v1.1.18/GitHub-Copilot-linux-x64.rpm"}
 			}
+			if name == "wowup-cf-installer" {
+				b.WowupRelease = &wowup.Artifact{SchemaVersion: 1, Version: "2.23.2", Name: "wowup-cf", Arch: "x86_64", SHA256: strings.Repeat("c", 64), Source: "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.2/WowUp-CF-2.23.2.AppImage"}
+			}
 			srpm, err := b.Prepare(t.Context(), name, filepath.Join(root, "sources"))
 			if err != nil {
 				t.Fatal(err)
@@ -70,11 +74,18 @@ func TestNativeHelperRPMs(t *testing.T) {
 			rpm := packages[0]
 			for _, option := range []string{"--scripts", "--triggers"} {
 				data := native(t, "", "rpm", "-qp", option, rpm)
-				if name == "github-copilot-installer" && option == "--scripts" {
-					if !bytes.Contains(data, []byte("systemctl --no-block restart github-copilot-installer.service || exit 1")) || bytes.Contains(data, []byte("--assumeyes")) {
-						t.Fatalf("Copilot must schedule its installer outside the RPM transaction: %s", data)
+				if option == "--scripts" {
+					if !bytes.Contains(data, []byte("systemctl --no-block restart "+name+".service || exit 1")) {
+						t.Fatalf("Package must schedule its installer outside the RPM transaction: %s", data)
 					}
-					checkCopilotScheduling(t, string(native(t, "", "rpm", "-qp", "--qf", "%{POSTTRANS}", rpm)))
+					posttrans := string(native(t, "", "rpm", "-qp", "--qf", "%{POSTTRANS}", rpm))
+					if strings.Contains(posttrans, "--assumeyes") {
+						t.Fatal("application installation must run outside the RPM transaction")
+					}
+					checkInstallerScheduling(t, name, posttrans)
+					if name == "wowup-cf-installer" {
+						checkWowupRemoval(t, string(native(t, "", "rpm", "-qp", "--qf", "%{PREUN}", rpm)))
+					}
 					continue
 				}
 				if len(data) != 0 {
@@ -89,7 +100,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			paths := strings.Fields(string(native(t, "", "rpm", "-qpl", rpm)))
 			for _, path := range paths {
-				if name == "github-copilot-installer" && path == "/usr/lib/systemd/system/github-copilot-installer.service" {
+				if path == "/usr/lib/systemd/system/"+name+".service" {
 					continue
 				}
 				if path != "/usr/bin/"+name && !strings.HasPrefix(path, "/usr/share/doc/"+name) && !strings.HasPrefix(path, "/usr/share/licenses/"+name) && !strings.HasPrefix(path, "/usr/share/man/man1/"+name+".1") {
@@ -134,7 +145,20 @@ func TestNativeHelperRPMs(t *testing.T) {
 				if !bytes.Contains(release, []byte("app1.1.18")) {
 					t.Fatalf("app version does not advance the package release: %s", release)
 				}
-				unit := filepath.Join(extracted, "usr/lib/systemd/system/github-copilot-installer.service")
+			}
+			if name == "wowup-cf-installer" {
+				release := native(t, "", filepath.Join(extracted, "usr/bin", name), "release", "--json")
+				a, err := wowup.ParseRelease(release)
+				if err != nil || a != *b.WowupRelease {
+					t.Fatalf("prepared WoWUp release was not bundled: %s %v", release, err)
+				}
+				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
+				if !bytes.Contains(rpmRelease, []byte("app2.23.2")) {
+					t.Fatalf("WoWUp version absent from RPM release: %s", rpmRelease)
+				}
+			}
+			{
+				unit := filepath.Join(extracted, "usr/lib/systemd/system/"+name+".service")
 				data, err := os.ReadFile(unit)
 				if err != nil {
 					t.Fatal(err)
@@ -149,7 +173,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 	}
 }
 
-func checkCopilotScheduling(t *testing.T, script string) {
+func checkInstallerScheduling(t *testing.T, name, script string) {
 	t.Helper()
 	for _, fail := range []bool{false, true} {
 		root := t.TempDir()
@@ -176,7 +200,7 @@ esac
 			t.Fatalf("incorrect scheduling result: %v %s", err, out)
 		}
 		data, err := os.ReadFile(calls)
-		if err != nil || !bytes.Contains(data, []byte("--no-block restart github-copilot-installer.service\n")) {
+		if err != nil || !bytes.Contains(data, []byte("--no-block restart "+name+".service\n")) {
 			t.Fatalf("fresh installation did not queue its service: %v %s", err, data)
 		}
 	}
@@ -395,6 +419,60 @@ func TestNativeCheckPackageScope(t *testing.T) {
 			}
 			if string(data) != strings.Join(want, "\n")+"\n" {
 				t.Fatalf("wrong scope:\n%s\nwant: %v", data, want)
+			}
+		})
+	}
+}
+
+// Execute the built RPM's final-removal hook with recording native commands.
+// Only disposable paths are used, including replacements for expanded macros.
+func checkWowupRemoval(t *testing.T, script string) {
+	t.Helper()
+	for _, tc := range []struct {
+		name, remaining, stopResult, removeResult string
+		running, fail                             bool
+		calls                                     string
+	}{
+		{"remove", "0", "0", "0", true, false, "stop\nuninstall --assumeyes\nmacro\n"},
+		{"upgrade", "1", "1", "1", true, false, ""},
+		{"multiple", "2", "1", "1", true, false, ""},
+		{"stop-failed", "0", "1", "0", true, true, "stop\n"},
+		{"cleanup-failed", "0", "0", "1", true, true, "stop\nuninstall --assumeyes\n"},
+		{"offline", "0", "1", "0", false, false, "uninstall --assumeyes\nmacro\n"},
+	} {
+		t.Run("removal/"+tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			bin := filepath.Join(root, "bin")
+			log := filepath.Join(root, "calls")
+			helper := filepath.Join(bin, "wowup-cf-installer")
+			macro := filepath.Join(bin, "systemd-update-helper")
+			write(t, filepath.Join(bin, "systemctl"), "#!/bin/sh\n[ \"$*\" = \"stop wowup-cf-installer.service\" ] || exit 99\nprintf 'stop\\n' >> \"$CALL_LOG\"\nexit \"$STOP_RESULT\"\n")
+			write(t, helper, "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CALL_LOG\"\nexit \"$REMOVE_RESULT\"\n")
+			write(t, macro, "#!/bin/sh\nprintf 'macro\\n' >> \"$CALL_LOG\"\n")
+			for _, path := range []string{filepath.Join(bin, "systemctl"), helper, macro} {
+				if err := os.Chmod(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			runtime := filepath.Join(root, "runtime")
+			if tc.running {
+				if err := os.Mkdir(runtime, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			patched := strings.NewReplacer("/run/systemd/system", runtime, "/usr/bin/wowup-cf-installer", helper, "/usr/lib/systemd/systemd-update-helper", macro).Replace(script)
+			cmd := exec.CommandContext(t.Context(), "sh", "-c", patched, "preun", tc.remaining)
+			cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "CALL_LOG="+log, "STOP_RESULT="+tc.stopResult, "REMOVE_RESULT="+tc.removeResult)
+			output, err := cmd.CombinedOutput()
+			if (err != nil) != tc.fail {
+				t.Fatalf("wrong removal result: %v %s", err, output)
+			}
+			calls, readErr := os.ReadFile(log)
+			if readErr != nil && !os.IsNotExist(readErr) {
+				t.Fatal(readErr)
+			}
+			if string(calls) != tc.calls {
+				t.Fatalf("wrong removal ordering: %q, want %q", calls, tc.calls)
 			}
 		})
 	}

@@ -11,9 +11,10 @@ Fedora 44 x86_64 packages and installer helpers.
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
 
-Installer helpers do not bundle their applications. Copilot package installation
-and upgrades automatically queue the selected app's download and installation;
-the WoWUp helper still requires explicit invocation.
+Installer helpers do not bundle their applications. Copilot and the WoWUp 0.2.0
+candidate automatically queue the selected app's download and installation when
+the helper package is installed or upgraded. Published WoWUp 0.1.0 still requires
+explicit invocation.
 See each package's README for installation, status and release details.
 
 ## Development
@@ -42,10 +43,10 @@ just publish voxtype                        # publish one package
 
 `publish` prepares the source RPM, creates/verifies the COPR project, and builds
 and publishes the package. You do not need to run `prepare` or `project` first.
-For Copilot, publication resolves the latest stable GitHub release and embeds
-its version and SHA-256 in the helper. The app version advances the RPM release,
-so DNF sees a package update. The proprietary RPM is downloaded only on the
-computer that installs the helper.
+For Copilot and WoWUp, publication resolves the latest stable GitHub release and
+embeds its version and SHA-256 in the helper. The app version advances the RPM
+release, so DNF sees a package update. Application artifacts are downloaded only
+on the computer that installs the helper.
 Use `just project voxtype` only to create/verify the project without a build.
 
 Replace `voxtype` with any package listed above. Publishing requires an
