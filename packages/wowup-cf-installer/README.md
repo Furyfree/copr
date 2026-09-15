@@ -6,12 +6,15 @@ The helper originated in Nimbus's local desktop-delivery work; the original
 Copyright (c) 2026 Patrick Byrne notice is preserved in `LICENSE`. Builds use
 these local sources and do not fetch or redistribute the application.
 
-Published **0.2.0-0.1.app2.23.1** is available for Fedora 44 x86_64 in
+Published **0.3.0-0.1.app2.23.1** is available for Fedora 44 x86_64 in
 [`furyfree/wowup-cf-installer`](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/),
-[COPR build 10989441](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/build/10989441/).
+[COPR build 10989485](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/build/10989485/).
 It selects official WoWUp-CF **2.23.1** and automatically manages installation
 and removal through DNF. The offline Fedora gate, remote CI and COPR build
-passed; real desktop and CurseForge acceptance checks remain pending.
+passed. Installation and removal were also verified on the owner's desktop
+with 0.2.0; CurseForge acceptance checks remain pending. Purge was tested using
+disposable profiles, including the packaged executable, without removing the
+owner's real profile.
 
 ## Installation and updates (0.2.0)
 
@@ -68,8 +71,8 @@ available for explicit app-only removal.
 
 ### Purge personal data (0.3.0)
 
-Version 0.3.0 adds the following explicit cleanup command; it is not yet
-published. Close WoWUp first, then run as your normal user, **without sudo**:
+Version 0.3.0 adds the following explicit cleanup command. Close WoWUp first,
+then run as your normal user, **without sudo**:
 
 ~~~sh
 wowup-cf-installer purge --assumeyes
