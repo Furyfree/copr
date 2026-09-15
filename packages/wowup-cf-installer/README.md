@@ -6,15 +6,14 @@ The helper originated in Nimbus's local desktop-delivery work; the original
 Copyright (c) 2026 Patrick Byrne notice is preserved in `LICENSE`. Builds use
 these local sources and do not fetch or redistribute the application.
 
-Published **0.1.0-0.1** is available for Fedora 44 x86_64 in
+Published **0.2.0-0.1.app2.23.1** is available for Fedora 44 x86_64 in
 [`furyfree/wowup-cf-installer`](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/),
-[COPR build 10972053](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/build/10972053/).
-That release requires explicit helper invocation. Candidate **0.2.0** adds the
-automatic package lifecycle below and has not yet been published.
+[COPR build 10989441](https://copr.fedorainfracloud.org/coprs/furyfree/wowup-cf-installer/build/10989441/).
+It selects official WoWUp-CF **2.23.1** and automatically manages installation
+and removal through DNF. The offline Fedora gate, remote CI and COPR build
+passed; real desktop and CurseForge acceptance checks remain pending.
 
 ## Installation and updates (0.2.0)
-
-After the candidate is published:
 
 ~~~sh
 sudo dnf copr enable furyfree/wowup-cf-installer

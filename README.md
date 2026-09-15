@@ -11,10 +11,9 @@ Fedora 44 x86_64 packages and installer helpers.
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
 
-Installer helpers do not bundle their applications. Copilot and the WoWUp 0.2.0
-candidate automatically queue the selected app's download and installation when
-the helper package is installed or upgraded. Published WoWUp 0.1.0 still requires
-explicit invocation.
+Installer helpers do not bundle their applications. Copilot and WoWUp
+automatically queue the selected app's download and installation when the helper
+package is installed or upgraded.
 See each package's README for installation, status and release details.
 
 ## Development
