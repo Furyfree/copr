@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const Version = "0.2.0"
+const Version = "0.3.0"
 const maxArtifact = 1024 * 1024 * 1024
 
 var stableVersion = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)

@@ -21,7 +21,7 @@ func run(ctx context.Context, args []string) error {
 		return nil
 	}
 	if len(args) == 0 {
-		return errors.New("expected install, update, prepare, apply, release, status or uninstall")
+		return errors.New("expected install, update, prepare, apply, release, status, uninstall or purge")
 	}
 	f := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	var directory, version, artifact, digest string
@@ -35,12 +35,12 @@ func run(ctx context.Context, args []string) error {
 		f.StringVar(&digest, "sha256", "", "approved SHA-256")
 		f.StringVar(&version, "app-version", "", "approved version")
 		f.BoolVar(&yes, "assumeyes", false, "approved mutation")
-	case "install", "update", "uninstall":
+	case "install", "update", "uninstall", "purge":
 		f.BoolVar(&yes, "assumeyes", false, "approved mutation")
 	case "release", "status":
 		f.Bool("json", false, "print JSON")
 	case "--help", "-h", "help":
-		fmt.Println("wowup-cf-installer install --assumeyes\n  update --assumeyes\n  release --json\n  prepare --directory DIR [--app-version VERSION]\n  apply --appimage FILE --sha256 HEX --app-version VERSION --assumeyes\n  status --json\n  uninstall --assumeyes")
+		fmt.Println("wowup-cf-installer install --assumeyes\n  update --assumeyes\n  release --json\n  prepare --directory DIR [--app-version VERSION]\n  apply --appimage FILE --sha256 HEX --app-version VERSION --assumeyes\n  status --json\n  uninstall --assumeyes\n  purge --assumeyes (without sudo; deletes your WoWUp settings, sessions and caches)")
 		return nil
 	default:
 		return errors.New("unknown command")
@@ -90,6 +90,11 @@ func run(ctx context.Context, args []string) error {
 			return errors.New("uninstall requires --assumeyes")
 		}
 		result, err = e.Uninstall(ctx)
+	case "purge":
+		if !yes {
+			return errors.New("purge requires --assumeyes to delete your WoWUp settings, sessions, logs and caches")
+		}
+		result, err = wowup.Purge(ctx)
 	case "status":
 		result, err = e.Status()
 	}

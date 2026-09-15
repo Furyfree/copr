@@ -2,7 +2,7 @@
 %global app_version 2.23.1
 
 Name:           wowup-cf-installer
-Version:        0.2.0
+Version:        0.3.0
 Release:        0.1.app%{app_version}%{?dist}
 Summary:        Automatically install the selected official WoWUp CurseForge app
 License:        MIT AND BSD-3-Clause
@@ -95,6 +95,9 @@ fi
 %{_mandir}/man1/wowup-cf-installer.1*
 
 %changelog
+* Tue Sep 15 2026 COPR maintainers - 0.3.0-0.1.app2.23.1
+- Add explicit unprivileged purge of the current user's WoWUp profile.
+
 * Tue Sep 15 2026 COPR maintainers - 0.2.0-0.1.app2.23.1
 - Automatically queue verified app installation on package install and upgrade.
 - Pin the selected app version and digest; preserve lifecycle ownership checks.

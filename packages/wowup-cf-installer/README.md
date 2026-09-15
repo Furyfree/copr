@@ -66,6 +66,33 @@ journal. Home directories, application settings, WoW installations and addons
 are always retained. The standalone `uninstall --assumeyes` command remains
 available for explicit app-only removal.
 
+### Purge personal data (0.3.0)
+
+Version 0.3.0 adds the following explicit cleanup command; it is not yet
+published. Close WoWUp first, then run as your normal user, **without sudo**:
+
+~~~sh
+wowup-cf-installer purge --assumeyes
+sudo dnf remove wowup-cf-installer
+~~~
+
+Run purge before removing the helper package, while its command is still
+available. It deletes your `$XDG_CONFIG_HOME/WowUpCf` profile (normally
+`~/.config/WowUpCf`), including preferences, saved sessions/cookies, logs and
+caches. It does not uninstall the shared application, delete other users'
+profiles, or touch WoW installations and addons outside this profile. You can
+also use it alone to reset WoWUp. Normal DNF removal still preserves user data.
+
+Purge requires `--assumeyes`, refuses root execution, and never uses
+`SUDO_USER` to select another account. It rejects a profile that is itself a
+symlink, foreign-owned entries, special files, and crossings to another
+filesystem. Symlinks inside the profile are removed without following their
+targets. A live or unrecognised Electron session lock blocks cleanup; a stale
+local lock whose process no longer exists is accepted. Keep WoWUp closed during
+purge. An interrupted or failed purge may have removed some files; fix the
+reported problem and rerun it. An already absent profile is a successful no-op.
+Success prints JSON containing `schema_version`, `name`, `path` and `purged`.
+
 Nimbus may install this package through its normal DNF flow. Existing
 prepare/apply/status/uninstall interfaces and receipts remain compatible.
 Standalone `install --assumeyes` and `update --assumeyes` reconcile the
@@ -129,7 +156,9 @@ Missing parent directories are created with root ownership and mode `0755`.
 Empty parent directories remain after removal. Foreign entries, unsafe parent
 ownership, parent symlinks, modified payloads and unknown bundle files block
 replacement or deletion. The helper never removes anything below the home
-directory and does not update desktop caches as an incidental operation.
+directory during app installation or uninstall, and does not update desktop
+caches as an incidental operation. Only explicit user-scoped purge removes the
+user's WoWUp profile.
 
 The complete bundle is synced and published using Linux `renameat2`; existing
 bundle updates exchange directories atomically. Global link creation is a

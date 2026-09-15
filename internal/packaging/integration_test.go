@@ -147,6 +147,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 				}
 			}
 			if name == "wowup-cf-installer" {
+				checkWowupPurge(t, filepath.Join(extracted, "usr/bin", name))
 				release := native(t, "", filepath.Join(extracted, "usr/bin", name), "release", "--json")
 				a, err := wowup.ParseRelease(release)
 				if err != nil || a != *b.WowupRelease {
@@ -170,6 +171,41 @@ func TestNativeHelperRPMs(t *testing.T) {
 				native(t, "", "flock", "--fcntl", "--exclusive", "--timeout", "1", filepath.Join(root, "lock"), "true")
 			}
 		})
+	}
+}
+
+func checkWowupPurge(t *testing.T, binary string) {
+	t.Helper()
+	config := t.TempDir()
+	profile := filepath.Join(config, "WowUpCf")
+	write(t, filepath.Join(profile, "preferences.json"), "fixture")
+	write(t, filepath.Join(config, "other-app", "settings"), "keep")
+	run := func(args ...string) ([]byte, error) {
+		cmd := exec.CommandContext(t.Context(), binary, args...)
+		cmd.Env = append(CleanEnvironment(), "XDG_CONFIG_HOME="+config)
+		return cmd.CombinedOutput()
+	}
+	if output, err := run("purge"); err == nil || !bytes.Contains(output, []byte("requires --assumeyes")) {
+		t.Fatalf("packaged purge missing confirmation: %s %v", output, err)
+	}
+	if _, err := os.Stat(filepath.Join(profile, "preferences.json")); err != nil {
+		t.Fatal("unconfirmed packaged purge changed data:", err)
+	}
+	output, err := run("purge", "--assumeyes")
+	if os.Getuid() == 0 {
+		if err == nil || !bytes.Contains(output, []byte("without sudo")) {
+			t.Fatalf("packaged root purge accepted: %s %v", output, err)
+		}
+		return
+	}
+	if err != nil || !bytes.Contains(output, []byte(`"purged":true`)) {
+		t.Fatalf("packaged purge: %s %v", output, err)
+	}
+	if _, err := os.Lstat(profile); !os.IsNotExist(err) {
+		t.Fatalf("packaged purge retained profile: %v", err)
+	}
+	if data, err := os.ReadFile(filepath.Join(config, "other-app", "settings")); err != nil || string(data) != "keep" {
+		t.Fatalf("packaged purge changed unrelated data: %v", err)
 	}
 }
 

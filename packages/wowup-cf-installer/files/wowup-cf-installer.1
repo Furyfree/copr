@@ -1,4 +1,4 @@
-.TH WOWUP-CF-INSTALLER 1 "September 2026" "wowup-cf-installer 0.2.0"
+.TH WOWUP-CF-INSTALLER 1 "September 2026" "wowup-cf-installer 0.3.0"
 .SH NAME
 wowup-cf-installer \- verified official WoWUp CurseForge application delivery
 .SH SYNOPSIS
@@ -23,6 +23,8 @@ wowup-cf-installer \- verified official WoWUp CurseForge application delivery
 .B wowup-cf-installer status --json
 .br
 .B wowup-cf-installer uninstall --assumeyes
+.br
+.B wowup-cf-installer purge --assumeyes
 .br
 .B wowup-cf-installer --version
 .SH DESCRIPTION
@@ -81,6 +83,20 @@ Require root and --assumeyes. Verify ownership before removing integration
 links and the application bundle. A durable removal journal permits resuming
 interrupted removal. Foreign or modified surviving entries block cleanup.
 Preserve home directories, application settings, games and addons.
+.TP
+.B purge
+Run as your normal user, without sudo, with --assumeyes. Close WoWUp first.
+Delete only the invoking user's $XDG_CONFIG_HOME/WowUpCf profile (default
+~/.config/WowUpCf), including preferences, sessions, cookies, logs and caches.
+Run before removing the helper RPM, while the command is available.
+Leave the shared application, other users' profiles and game/addon files outside
+this profile untouched. This command may also be used alone to reset WoWUp.
+Reject root execution, a symlink profile, foreign ownership, special files,
+crossings to another filesystem, and live or unrecognised Electron session locks.
+Remove nested symlinks without following their targets. Do not use SUDO_USER.
+Keep WoWUp closed during cleanup. Interrupted or failed cleanup may be partial;
+fix the reported problem and rerun. An absent profile succeeds without changes.
+Print JSON containing schema_version, name, path and purged.
 .SH FILES
 .TP
 .B /opt/wowup-cf/
@@ -98,6 +114,10 @@ Durable ownership journal for interrupted removal.
 .B /opt/.nimbus-wowup-cf-removing
 Owned pending-removal bundle. These established paths retain their original
 Nimbus names for lifecycle compatibility.
+.TP
+.B $XDG_CONFIG_HOME/WowUpCf
+Current user's profile, defaulting to ~/.config/WowUpCf. Removed only by an
+explicit unprivileged purge, never by DNF removal or uninstall.
 .SH NOTES
 The launcher clears AppImage updater environment variables, preserving addon
 updates and Chromium sandboxing. The one-shot job runs on package changes,
