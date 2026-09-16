@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -74,6 +75,7 @@ type Builder struct {
 	Run            Runner
 	CopilotRelease *copilot.Artifact
 	WowupRelease   *wowup.Artifact
+	ToolboxRelease *toolbox.Artifact
 }
 
 func New(root string) *Builder { return &Builder{Root: root, Run: Run} }
@@ -93,7 +95,7 @@ func (b *Builder) Prepare(ctx context.Context, name, out string) (string, error)
 	switch name {
 	case "voxtype":
 		return b.prepareVoxtype(ctx, out)
-	case "github-copilot-installer", "wowup-cf-installer":
+	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer":
 		return b.prepareHelper(ctx, name, out)
 	default:
 		return b.SRPM(ctx, filepath.Join(b.Root, "packages", name, name+".spec"), out)

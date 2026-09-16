@@ -10,10 +10,11 @@ Fedora 44 x86_64 packages and installer helpers.
 | [librepods](packages/librepods/README.md) | Headless AirPods daemon with Noctalia integration |
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
+| [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install and update the official JetBrains Toolbox App without autostart |
 
-Installer helpers do not bundle their applications. Copilot and WoWUp
-automatically queue the selected app's download and installation when the helper
-package is installed or upgraded.
+Installer helpers do not bundle their applications. Copilot, WoWUp and JetBrains
+Toolbox automatically queue the selected app's download and installation when
+the helper package is installed or upgraded.
 See each package's README for installation, status and release details.
 
 ## Development
@@ -42,8 +43,8 @@ just publish voxtype                        # publish one package
 
 `publish` prepares the source RPM, creates/verifies the COPR project, and builds
 and publishes the package. You do not need to run `prepare` or `project` first.
-For Copilot and WoWUp, publication resolves the latest stable GitHub release and
-embeds its version and SHA-256 in the helper. The app version advances the RPM
+For Copilot, WoWUp and JetBrains Toolbox, publication resolves the latest stable
+upstream release and embeds its version and SHA-256 in the helper. The app version advances the RPM
 release, so DNF sees a package update. Application artifacts are downloaded only
 on the computer that installs the helper.
 Use `just project voxtype` only to create/verify the project without a build.

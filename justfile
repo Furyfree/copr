@@ -28,6 +28,7 @@ check-package package: _check-style
     case "$package" in
         github-copilot-installer) targets+=(./cmd/github-copilot-installer ./internal/copilot) ;;
         wowup-cf-installer) targets+=(./cmd/wowup-cf-installer ./internal/wowup) ;;
+        jetbrains-toolbox-installer) targets+=(./cmd/jetbrains-toolbox-installer ./internal/toolbox) ;;
     esac
     go vet "${targets[@]}"
     COPR_TEST_PACKAGE="$package" go test -tags=integration "${targets[@]}" -count=1
@@ -50,5 +51,5 @@ project package: (_dispatch "project" package)
 
 [private]
 _dispatch operation package:
-    @case {{ quote(package) }} in blesh|nimbus|voxtype|librepods|github-copilot-installer|wowup-cf-installer) ;; *) echo 'Choose blesh, nimbus, voxtype, librepods, github-copilot-installer, or wowup-cf-installer' >&2; exit 2 ;; esac
+    @case {{ quote(package) }} in blesh|nimbus|voxtype|librepods|github-copilot-installer|wowup-cf-installer|jetbrains-toolbox-installer) ;; *) echo 'Choose blesh, nimbus, voxtype, librepods, github-copilot-installer, wowup-cf-installer, or jetbrains-toolbox-installer' >&2; exit 2 ;; esac
     gh workflow run copr.yml --repo Furyfree/copr --ref main -f {{ quote("operation=" + operation) }} -f {{ quote("package=" + package) }}

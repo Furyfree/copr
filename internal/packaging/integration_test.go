@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
 
@@ -43,7 +44,7 @@ func selected(t *testing.T, name string) {
 }
 
 func TestNativeHelperRPMs(t *testing.T) {
-	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer"} {
+	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
 		t.Run(name, func(t *testing.T) {
 			selected(t, name)
 			root := t.TempDir()
@@ -53,6 +54,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			if name == "wowup-cf-installer" {
 				b.WowupRelease = &wowup.Artifact{SchemaVersion: 1, Version: "2.23.2", Name: "wowup-cf", Arch: "x86_64", SHA256: strings.Repeat("c", 64), Source: "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.2/WowUp-CF-2.23.2.AppImage"}
+			}
+			if name == "jetbrains-toolbox-installer" {
+				b.ToolboxRelease = &toolbox.Artifact{SchemaVersion: 1, Version: "3.8.1.90000", Name: "jetbrains-toolbox", Arch: "x86_64", SHA256: strings.Repeat("d", 64), Source: "https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.8.1.90000.tar.gz"}
 			}
 			srpm, err := b.Prepare(t.Context(), name, filepath.Join(root, "sources"))
 			if err != nil {
@@ -83,8 +87,8 @@ func TestNativeHelperRPMs(t *testing.T) {
 						t.Fatal("application installation must run outside the RPM transaction")
 					}
 					checkInstallerScheduling(t, name, posttrans)
-					if name == "wowup-cf-installer" {
-						checkWowupRemoval(t, string(native(t, "", "rpm", "-qp", "--qf", "%{PREUN}", rpm)))
+					if name != "github-copilot-installer" {
+						checkBundleRemoval(t, name, string(native(t, "", "rpm", "-qp", "--qf", "%{PREUN}", rpm)))
 					}
 					continue
 				}
@@ -120,7 +124,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			version := string(native(t, "", "rpm", "-qp", "--qf", "%{VERSION}", rpm))
 			arg := "version"
-			if name == "wowup-cf-installer" {
+			if name != "github-copilot-installer" {
 				arg = "--version"
 			}
 			if actual := strings.TrimSpace(string(native(t, "", filepath.Join(extracted, "usr/bin", name), arg))); actual != name+" "+version {
@@ -156,6 +160,22 @@ func TestNativeHelperRPMs(t *testing.T) {
 				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
 				if !bytes.Contains(rpmRelease, []byte("app2.23.2")) {
 					t.Fatalf("WoWUp version absent from RPM release: %s", rpmRelease)
+				}
+			}
+			if name == "jetbrains-toolbox-installer" {
+				release := native(t, "", filepath.Join(extracted, "usr/bin", name), "release", "--json")
+				a, err := toolbox.ParseRelease(release)
+				if err != nil || a != *b.ToolboxRelease {
+					t.Fatalf("prepared Toolbox release was not bundled: %s %v", release, err)
+				}
+				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
+				if !bytes.Contains(rpmRelease, []byte("app3.8.1.90000")) {
+					t.Fatalf("Toolbox build absent from RPM release: %s", rpmRelease)
+				}
+				for _, dependency := range requires {
+					if dependency == "squashfs-tools" || dependency == "tar" || dependency == "gzip" {
+						t.Fatalf("archive extraction must not depend on external tools: %s", dependency)
+					}
 				}
 			}
 			{
@@ -427,6 +447,7 @@ func TestNativeCheckPackageScope(t *testing.T) {
 		{"voxtype", "./cmd/coprctl ./internal/packaging"},
 		{"github-copilot-installer", "./cmd/coprctl ./internal/packaging ./cmd/github-copilot-installer ./internal/copilot"},
 		{"wowup-cf-installer", "./cmd/coprctl ./internal/packaging ./cmd/wowup-cf-installer ./internal/wowup"},
+		{"jetbrains-toolbox-installer", "./cmd/coprctl ./internal/packaging ./cmd/jetbrains-toolbox-installer ./internal/toolbox"},
 		{"", "./..."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -462,7 +483,7 @@ func TestNativeCheckPackageScope(t *testing.T) {
 
 // Execute the built RPM's final-removal hook with recording native commands.
 // Only disposable paths are used, including replacements for expanded macros.
-func checkWowupRemoval(t *testing.T, script string) {
+func checkBundleRemoval(t *testing.T, name, script string) {
 	t.Helper()
 	for _, tc := range []struct {
 		name, remaining, stopResult, removeResult string
@@ -480,9 +501,9 @@ func checkWowupRemoval(t *testing.T, script string) {
 			root := t.TempDir()
 			bin := filepath.Join(root, "bin")
 			log := filepath.Join(root, "calls")
-			helper := filepath.Join(bin, "wowup-cf-installer")
+			helper := filepath.Join(bin, name)
 			macro := filepath.Join(bin, "systemd-update-helper")
-			write(t, filepath.Join(bin, "systemctl"), "#!/bin/sh\n[ \"$*\" = \"stop wowup-cf-installer.service\" ] || exit 99\nprintf 'stop\\n' >> \"$CALL_LOG\"\nexit \"$STOP_RESULT\"\n")
+			write(t, filepath.Join(bin, "systemctl"), "#!/bin/sh\n[ \"$*\" = \"stop "+name+".service\" ] || exit 99\nprintf 'stop\\n' >> \"$CALL_LOG\"\nexit \"$STOP_RESULT\"\n")
 			write(t, helper, "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CALL_LOG\"\nexit \"$REMOVE_RESULT\"\n")
 			write(t, macro, "#!/bin/sh\nprintf 'macro\\n' >> \"$CALL_LOG\"\n")
 			for _, path := range []string{filepath.Join(bin, "systemctl"), helper, macro} {
@@ -496,7 +517,7 @@ func checkWowupRemoval(t *testing.T, script string) {
 					t.Fatal(err)
 				}
 			}
-			patched := strings.NewReplacer("/run/systemd/system", runtime, "/usr/bin/wowup-cf-installer", helper, "/usr/lib/systemd/systemd-update-helper", macro).Replace(script)
+			patched := strings.NewReplacer("/run/systemd/system", runtime, "/usr/bin/"+name, helper, "/usr/lib/systemd/systemd-update-helper", macro).Replace(script)
 			cmd := exec.CommandContext(t.Context(), "sh", "-c", patched, "preun", tc.remaining)
 			cmd.Env = append(CleanEnvironment(), "PATH="+bin+":"+os.Getenv("PATH"), "CALL_LOG="+log, "STOP_RESULT="+tc.stopResult, "REMOVE_RESULT="+tc.removeResult)
 			output, err := cmd.CombinedOutput()

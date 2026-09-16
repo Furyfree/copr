@@ -9,8 +9,12 @@ import (
 	"regexp"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
+
+// Each installer helper command builds on one self-contained implementation package.
+var helperImplementations = map[string]string{"github-copilot-installer": "copilot", "wowup-cf-installer": "wowup", "jetbrains-toolbox-installer": "toolbox"}
 
 func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, error) {
 	packageDir := filepath.Join(b.Root, "packages", name)
@@ -47,9 +51,9 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 			return "", err
 		}
 	}
-	implementation := "copilot"
-	if name == "wowup-cf-installer" {
-		implementation = "wowup"
+	implementation, ok := helperImplementations[name]
+	if !ok {
+		return "", errors.New("unknown installer helper")
 	}
 	for _, path := range []string{filepath.Join("cmd", name), filepath.Join("internal", implementation)} {
 		if err := copyTree(filepath.Join(b.Root, path), filepath.Join(tree, path)); err != nil {
@@ -83,6 +87,18 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 			return "", err
 		}
 		a, err := wowup.ParseRelease(data)
+		if err != nil {
+			return "", err
+		}
+		appVersion = a.Version
+	case "jetbrains-toolbox-installer":
+		if b.ToolboxRelease != nil {
+			data, err = json.MarshalIndent(b.ToolboxRelease, "", "  ")
+		}
+		if err != nil {
+			return "", err
+		}
+		a, err := toolbox.ParseRelease(data)
 		if err != nil {
 			return "", err
 		}

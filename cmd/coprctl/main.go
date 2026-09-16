@@ -11,6 +11,7 @@ import (
 
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/packaging"
+	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
 
@@ -47,6 +48,13 @@ func run(ctx context.Context, args []string) error {
 				}
 				b.WowupRelease = &a
 				fmt.Fprintf(os.Stderr, "Selected WoWUp-CF %s, SHA-256 %s\n", a.Version, a.SHA256)
+			case "jetbrains-toolbox-installer":
+				a, err := toolbox.LatestRelease(ctx)
+				if err != nil {
+					return err
+				}
+				b.ToolboxRelease = &a
+				fmt.Fprintf(os.Stderr, "Selected JetBrains Toolbox %s, SHA-256 %s\n", a.Version, a.SHA256)
 			default:
 				return fmt.Errorf("--latest is supported only for installer packages")
 			}

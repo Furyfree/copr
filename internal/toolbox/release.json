@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "version": "3.8.0.87909",
+  "name": "jetbrains-toolbox",
+  "arch": "x86_64",
+  "sha256": "3bd93bc3d251dc142514fda1e9aba9d2768f8cb84f17b7599befa001466af1cf",
+  "path": "",
+  "source": "https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.8.0.87909.tar.gz"
+}

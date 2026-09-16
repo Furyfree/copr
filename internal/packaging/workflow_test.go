@@ -151,7 +151,7 @@ func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 	if !ok {
 		t.Fatal("missing preparation script")
 	}
-	for _, name := range []string{"blesh", "nimbus", "voxtype", "librepods", "github-copilot-installer", "wowup-cf-installer"} {
+	for _, name := range []string{"blesh", "nimbus", "voxtype", "librepods", "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
 		t.Run(name, func(t *testing.T) {
 			temp := t.TempDir()
 			bin := filepath.Join(temp, "bin")
@@ -166,7 +166,7 @@ func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 				t.Fatalf("preparation failed: %v %s", err, out)
 			}
 			want := "prepare\n" + name + "\n/output\n"
-			if name == "github-copilot-installer" || name == "wowup-cf-installer" {
+			if _, helper := helperImplementations[name]; helper {
 				want += "--latest\n"
 			}
 			if !strings.HasSuffix(string(out), want) {

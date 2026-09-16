@@ -1,0 +1,126 @@
+.TH JETBRAINS-TOOLBOX-INSTALLER 1 "September 2026" "jetbrains-toolbox-installer 0.1.0"
+.SH NAME
+jetbrains-toolbox-installer \- verified official JetBrains Toolbox App delivery
+.SH SYNOPSIS
+.B jetbrains-toolbox-installer install --assumeyes
+.br
+.B jetbrains-toolbox-installer update --assumeyes
+.br
+.B jetbrains-toolbox-installer release --json
+.br
+.B jetbrains-toolbox-installer prepare --directory
+.I DIR
+.RB [ --app-version " BUILD"]
+.br
+.B jetbrains-toolbox-installer apply --archive
+.I PATH
+.B --sha256
+.I HEX
+.B --app-version
+.I BUILD
+.B --assumeyes
+.br
+.B jetbrains-toolbox-installer status --json
+.br
+.B jetbrains-toolbox-installer uninstall --assumeyes
+.br
+.B jetbrains-toolbox-installer --version
+.SH DESCRIPTION
+This helper targets Fedora 44 x86_64. The helper RPM contains no application
+payload. Installing, reinstalling or upgrading the RPM automatically queues a
+one-shot systemd job that downloads and installs the package-selected JetBrains
+Toolbox release. No second installer command is required. DNF completion
+reports queuing, not application readiness. Check systemctl status
+jetbrains-toolbox-installer.service and journalctl -u
+jetbrains-toolbox-installer.service for completion or failures.
+The job waits for the DNF transaction and retries failed operations at
+60-second intervals, limited to three starts in 15 minutes. Reinstalling the
+helper queues a fresh attempt after a persistent problem is fixed.
+Application updates arrive through new helper RPM release selections.
+Final DNF package removal stops the job and its retries, then removes the
+verified application bundle and desktop integration. Upgrades and reinstalls
+do not uninstall the app. A stop, ownership or cleanup failure prevents erasing
+the helper, allowing a later retry. Installed IDEs, projects and settings under
+the home directory are retained.
+.SH COMMANDS
+.TP
+.B install, update
+Require root and --assumeyes. Reconcile the release selected by the signed
+helper package. Verify existing ownership before network access. A current,
+verified installation is unchanged; missing known links can be repaired
+offline. Refuse downgrades, changed release metadata and conflicting ownership.
+Download the exact official archive and apply it using the same verification
+and ownership rules as prepare/apply. Print installed-state JSON.
+.TP
+.B release
+Print the package-selected build, source and SHA-256 as JSON, offline.
+.TP
+.B prepare
+Run without root. Download the latest stable official Linux archive, or the
+build selected with --app-version, into a private child of an existing
+directory. Verify its exact HTTPS release URL, the SHA-256 published beside it,
+expected size and gzip identity. Print metadata JSON with schema_version, name,
+arch, version, sha256, path and source. The caller owns successful-download
+cleanup and must show the selected artifact before approval. Failure removes
+the incomplete download. These checks are not a publisher signature.
+.TP
+.B apply
+Require root and --assumeyes. Work offline. Copy the selected archive into
+private privileged staging, verify it again, refuse downgrades and unpack it
+without executing anything it contains. Only directories, regular files and
+internal relative symlinks are accepted. Verify owned files before replacement.
+Publish the bundle and install the fixed integration links. Print verified
+installed-state JSON. The caller must approve the exact build and SHA-256
+before invoking this command.
+.TP
+.B status
+Read-only and offline. Print JSON containing schema_version, name, installed,
+verified, integrated and cleanup_pending, plus the approved identity when
+installed. Invalid or foreign state is an error, never successful absence.
+Missing known integration links are repairable through approved apply.
+.TP
+.B uninstall
+Require root and --assumeyes. Verify ownership before removing integration
+links and the application bundle. A durable removal journal permits resuming
+interrupted removal. Foreign or modified surviving entries block cleanup.
+Preserve home directories, installed IDEs, projects and Toolbox settings.
+.SH FILES
+.TP
+.B /opt/jetbrains-toolbox/
+Owned archive, unpacked app, launcher, desktop entry and inventory receipt.
+.TP
+.B /usr/local/bin/jetbrains-toolbox
+Owned symlink to the launch wrapper.
+.TP
+.B /usr/local/share/applications/jetbrains-toolbox.desktop
+Owned symlink to the desktop entry.
+.TP
+.B /opt/.jetbrains-toolbox-removal.json
+Durable ownership journal for interrupted removal.
+.TP
+.B /opt/.jetbrains-toolbox-removing
+Owned pending-removal bundle.
+.TP
+.B $XDG_DATA_HOME/JetBrains/Toolbox/.settings.json
+Current user's Toolbox settings, defaulting to
+~/.local/share/JetBrains/Toolbox/.settings.json. The launcher creates this file
+with autostart disabled when it does not exist yet, and never changes an
+existing file. Toolbox owns it afterwards.
+.SH NOTES
+Toolbox enables autostart by default and rewrites the XDG autostart entry from
+its own settings on every launch. The launcher records the opt-out before the
+first launch, so the app does not start with the session unless the user
+enables that in Toolbox settings. Starting the unpacked executable directly,
+bypassing the launcher, skips this step.
+Toolbox cannot update itself inside the root-owned bundle; application updates
+arrive through new helper packages. The one-shot job runs on package changes,
+not periodically or at every boot. Bundle exchange is atomic; the complete
+install or removal transaction is not. Missing known links and interrupted
+removal can be retried, while unknown ownership or modified files require
+inspection. Empty parent directories remain after removal. DNF removal invokes
+the verified uninstall operation automatically; standalone uninstall remains
+available for app-only removal.
+.SH EXIT STATUS
+Zero indicates success. Nonzero indicates invalid input, unsupported platform,
+unverified ownership or a failed operation. SIGTERM and keyboard interruption
+return nonzero. A failed operation must not receive a successful caller receipt.

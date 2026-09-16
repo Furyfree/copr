@@ -33,3 +33,9 @@ name = "wowup-cf-installer"
 chroots = ["fedora-44-x86_64"]
 description = "MIT installer helper for the official WoWUp CurseForge app; no app payload included"
 homepage = "https://github.com/Furyfree/copr"
+
+[projects.jetbrains-toolbox-installer]
+name = "jetbrains-toolbox-installer"
+chroots = ["fedora-44-x86_64"]
+description = "MIT installer helper for the official JetBrains Toolbox App without autostart; no app payload included"
+homepage = "https://github.com/Furyfree/copr"
