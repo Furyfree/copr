@@ -1,9 +1,13 @@
 # Voxtype
 
 Published for Fedora 44 x86_64, built from the signed upstream 1.0.1 source.
-It builds the CPU Whisper daemon with no optional GPU/ONNX/OSD features.
-Nimbus has not selected it yet. Models, languages, hotkeys, and optional
-acceleration remain deployment choices.
+It builds the Whisper daemon with x86-64-v3 (AVX2/FMA) CPU kernels and the
+Vulkan GPU backend; ONNX engines and the OSD frontend remain excluded.
+Vulkan needs a runtime driver such as `mesa-vulkan-drivers`; without one the
+daemon logs "no GPU found" and transcribes on the CPU. The binary requires an
+x86-64-v3 CPU (Intel Haswell/AMD Excavator, 2013+, or newer); it aborts with
+an illegal instruction on older processors. Models, languages, and hotkeys
+remain deployment choices.
 
 The Go source-preparation command verifies the reviewed source SHA-256 and upstream detached
 signature against `files/signing.asc`, then vendors the exact Cargo.lock dependencies.
@@ -15,11 +19,12 @@ Version bumps must review the new source digest, signing identity, dependencies,
 license inventory, and native build before publication.
 
 Use a Fedora container with the RPM tools, Cargo, Rust, GnuPG, C/C++ compiler,
-Clang development files, ALSA development files, CMake, and systemd RPM macros:
+Clang development files, ALSA development files, CMake, the Vulkan headers,
+loader development files and `glslc` shader compiler, and systemd RPM macros:
 
 ```sh
 just prepare voxtype /tmp/voxtype-srpm
-rpmbuild --rebuild /tmp/voxtype-srpm/voxtype-1.0.1-0.2.fc44.src.rpm
+rpmbuild --rebuild /tmp/voxtype-srpm/voxtype-1.0.1-0.3.fc44.src.rpm
 ```
 
 Source preparation accesses the network; run the subsequent binary build with
@@ -59,6 +64,14 @@ Native microphone, transcription, compositor output, service start/stop, and
 install/update/removal trials remain separate from compilation and CLI smoke
 checks. Confirm CPU compatibility and any additional acceleration features on
 the actual target before deployment.
+
+Release 0.3 fixes transcription speed. The 0.2 build compiled ggml at the
+plain x86-64 baseline, so Whisper's kernels ran SSE-only: an 11-second clip
+took 87 seconds with the `small` model on a Ryzen AI 9 HX PRO 375. The same
+clip with x86-64-v3 kernels and 12 threads took 4.3 seconds in a local
+container build with identical flags. Release 0.3 also compiles the Vulkan
+backend so capable GPUs accelerate inference without a separate binary swap;
+GPU operation still needs a device trial on the target machine.
 
 Local validation on 2026-09-09 passed a Fedora 44 x86_64 offline rebuild,
 including 1,002 upstream library tests and the CLI version/help checks. Two
