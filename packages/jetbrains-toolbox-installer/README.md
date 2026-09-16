@@ -84,8 +84,13 @@ This behaviour was verified against the official 3.8.0.87909 archive in a
 disposable home directory using `jetbrains-toolbox --integrate-into-system`,
 which runs the startup integration and exits without opening a window. Without
 a settings file, Toolbox created the autostart entry. With the seeded file, it
-created none, deleted a pre-existing stale entry, honoured `XDG_DATA_HOME` and
-preserved `"autostart": false` when it rewrote the file.
+created none, deleted a pre-existing stale entry, honoured `XDG_DATA_HOME` for
+its data directory and preserved `"autostart": false` when it rewrote the file.
+That isolation was not complete: Toolbox resolves the applications directory
+from the account's home, not from `HOME` or `XDG_DATA_HOME`, so such a trial
+leaves `~/.local/share/applications/jetbrains-toolbox.desktop` pointing at the
+trial directory. Remove that file after a trial, or the menu entry shadows the
+packaged one and fails to launch.
 
 ## Self-update
 
