@@ -54,10 +54,10 @@ just publish blesh
 ```
 
 That command creates/verifies the owner's `blesh` project and submits one SRPM.
-Adding the recipe or opening a pull request does not publish it. Nimbus should
-select the package only after publication and verification of the COPR key.
+Adding the recipe or opening a pull request does not publish it. Nimbus
+selects `blesh:blesh` in the `common` profile against the pinned project key.
 
-Once published, installation is:
+Installation is:
 
 ```sh
 sudo dnf copr enable furyfree/blesh
@@ -80,5 +80,9 @@ licenses, with no writable shared directories, scriptlets or broken symlinks.
 Native RPM installation, verification and removal passed in a disposable
 container. An isolated Bash session using the extracted RPM and the existing
 dotfiles fzf configuration exercised ordinary Tab completion with the real fzf
-picker, history suggestions and syntax colors. Hosted COPR publication and
-verification of the signed package remain separate steps.
+picker, history suggestions and syntax colors.
+
+Published on 2026-09-12 as `blesh-0.4.0~devel4-0.1.20260908gitd81fd54.fc44.noarch`
+in [COPR build 10978681](https://copr.fedorainfracloud.org/coprs/furyfree/blesh/build/10978681/).
+The owner's workstation installed it from the pinned project key, and the
+Bash configuration sources `/usr/share/blesh/ble.sh` from the RPM.
