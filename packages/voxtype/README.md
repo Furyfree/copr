@@ -5,8 +5,9 @@ It builds the Whisper daemon with x86-64-v3 (AVX2/FMA) CPU kernels and the
 Vulkan GPU backend; ONNX engines and the OSD frontend remain excluded.
 Vulkan needs a runtime driver such as `mesa-vulkan-drivers`; without one the
 daemon logs "no GPU found" and transcribes on the CPU. The binary requires an
-x86-64-v3 CPU (Intel Haswell/AMD Excavator, 2013+, or newer); it aborts with
-an illegal instruction on older processors. Models, languages, and hotkeys
+x86-64-v3 CPU (Intel Haswell/AMD Excavator, 2013+, or newer); on older
+processors Voxtype's SIGILL handler reports the unsupported CPU instead of a
+raw crash. Models, languages, and hotkeys
 remain deployment choices.
 
 The Go source-preparation command verifies the reviewed source SHA-256 and upstream detached
@@ -87,3 +88,15 @@ model-download tests remained ignored. The downloaded RPM's service
 scriptlets were checked, and its signature and digests verified against the
 [project key](https://download.copr.fedorainfracloud.org/results/furyfree/voxtype/pubkey.gpg),
 fingerprint `B4DED69E7793D5DF2FC32BC1C69E64492CA2E833`.
+
+Published on 2026-09-17 as `voxtype-1.0.1-0.3.fc44.x86_64` in
+[COPR build 10993176](https://copr.fedorainfracloud.org/coprs/furyfree/voxtype/build/10993176/),
+after the package gate and an offline container rebuild of the prepared
+SRPM. The downloaded RPM's signature and digests verified against the same
+project key. Its binary links `libvulkan.so.1` and contains AVX2 FMA
+kernels; the equivalent local rebuild transcribed an 11-second clip in
+4.3 s on 12 CPU threads and under 1 s on a Radeon 890M via Vulkan, against
+87 s for the 0.2 build. The live daemon trial on the owner's laptop on
+2026-09-17 loaded the `small` model over Vulkan (RADV, Radeon 890M) and typed
+dictated text into terminal and desktop applications. The desktop (RTX 3080)
+trial remains.
