@@ -112,7 +112,7 @@ type Installer struct {
 }
 
 func New() *Installer {
-	e := &Installer{out: os.Stdout, temp: "/var/tmp", root: func() bool { return os.Geteuid() == 0 }, platform: platformCheck, release: packageRelease}
+	e := &Installer{out: os.Stdout, temp: "/var/tmp", root: func() bool { return os.Geteuid() == 0 }, platform: platformCheck, release: PackagedRelease}
 	e.client = &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(r *http.Request, via []*http.Request) error {
 		if len(via) >= 5 || !officialURL(r.URL.String()) {
 			return errors.New("download redirected outside official GitHub source")

@@ -25,12 +25,26 @@ Tools and tests use Go, with Bash for small wrappers. Package recipes live in
 ```sh
 just check-container                        # full offline gate; requires Docker
 just test                                   # unit tests; requires Go 1.26.7+
+just check-pins                             # report stale installer pins; needs network
 just prepare voxtype /tmp/voxtype-srpm        # optional local source RPM; requires Go and Fedora build tools
 ```
 
 Local checks and CI share [build/Containerfile](build/Containerfile).
 `prepare` is for local testing and does not publish anything.
 Run `just --list` for all commands.
+
+`just check-pins` resolves the latest stable upstream release for Copilot,
+WoWUp and JetBrains Toolbox and reports how each checked-in pin differs; it
+reads metadata only and never publishes. The scheduled "Installer pins"
+workflow runs the same check weekly and fails while a pin is stale, so a
+forgotten refresh becomes visible. The check makes unauthenticated GitHub API
+requests, and GitHub disables scheduled workflows after 60 days without
+repository activity; dispatch the workflow manually if it has gone quiet.
+
+Refresh a stale pin by updating `internal/<implementation>/release.json`
+(version, source, sha256) and the spec's `%global app_version`, then commit and
+publish. `just publish PACKAGE` resolves the latest release for the SRPM, but
+native COPR builds through `.copr/Makefile` use the checked-in pin.
 
 ## Publishing
 

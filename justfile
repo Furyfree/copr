@@ -18,6 +18,10 @@ image:
 test:
     go test ./...
 
+# Resolve the latest upstream releases and report stale installer pins.
+check-pins:
+    go run ./cmd/coprctl pin-status
+
 # Shared tooling and one package's tests, spec and native RPM checks.
 check-package package: _check-style
     #!/usr/bin/env bash
