@@ -5,11 +5,13 @@ The Go helper and tests live in `cmd/jetbrains-toolbox-installer` and
 recipe. Builds use these local sources and do not fetch or redistribute the
 application.
 
-Local candidate **0.1.0-0.1.app3.8.0.87909** selects official JetBrains Toolbox
+Release **0.1.0-0.1.app3.8.0.87909** selects official JetBrains Toolbox
 **3.8.0.87909** and automatically manages installation and removal through DNF.
-It has not been published to COPR yet. The offline fixture gate passes; the
-container gate, a real systemd-host install/upgrade/removal drill and a real
-desktop launch from the bundle remain acceptance checks.
+Published on 2026-09-16 as
+[COPR build 10992750](https://copr.fedorainfracloud.org/coprs/furyfree/jetbrains-toolbox-installer/build/10992750/)
+and installed on the owner's workstation: the one-shot systemd job completed,
+and `status --json` reports `installed`, `verified` and `integrated` for
+3.8.0.87909. The self-update failure path remains an acceptance check.
 
 ## Installation and updates
 
@@ -210,9 +212,11 @@ ships its own Java runtime; the launcher, runtime and native libraries link
 only against system libraries that the package requirements declare or pull in
 transitively, as checked with `ldd` on Fedora 44.
 
-Real desktop launch from `/opt`, IDE installation through Toolbox, and the
-self-update failure path remain installation acceptance checks. A passing
-ownership test does not establish those runtime results.
+The desktop launch from `/opt` and IDE installation through Toolbox passed on
+the owner's workstation on 2026-09-16; Toolbox launched from the bundle, and
+installed IDEs (CLion, Rider) appear as desktop entries. The self-update
+failure path remains an installation acceptance check. A passing ownership
+test does not establish those runtime results.
 
 ## Package build and publication
 
