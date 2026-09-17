@@ -7,7 +7,10 @@ Name:           nimbus
 Version:        0.5.10
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
-License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016
+# LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
+# Licence in licenses/GEANT-CAT.txt covers the adapted DTU CAT helper; SPDX
+# has no identifier for it.
+License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016 AND LicenseRef-GEANT-CAT
 URL:            https://github.com/Furyfree/nimbus
 Source0:        %{url}/releases/download/v%{version}/nimbus-%{version}-vendor.tar.gz
 ExclusiveArch:  x86_64
@@ -58,7 +61,7 @@ find vendor -type f \( -iname 'license*' -o -iname 'copying*' \
 cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 
 %files
-%license LICENSE bundled-licenses licenses/Unicode-DFS-2016.txt
+%license LICENSE bundled-licenses licenses/Unicode-DFS-2016.txt licenses/GEANT-CAT.txt
 %license internal/agentproxy/resources/UPSTREAM-LICENSE.txt
 %{_bindir}/nimbus
 

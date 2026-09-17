@@ -584,6 +584,24 @@ tests and the vendored release workflow pass. The owner confirmed the local
 command verifies the existing desktop certificate; campus Wi-Fi is not tested.
 COPR submission does not establish build success or RPM availability.
 
+## License metadata for the DTU CAT adaptation
+
+The recipe declares the separately licensed DTU CAT helper adaptation:
+`License: MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016 AND
+LicenseRef-GEANT-CAT`, and `%license` now ships `licenses/GEANT-CAT.txt`
+(the GÉANT Standard Open Source Software Outward Licence; SPDX has no
+identifier for it). The file has been part of the Nimbus checkout since commit
+`96ddee1`, after v0.5.10, so the change takes effect with the 0.6.0 release
+archive and does not alter the published 0.5.10 package.
+
+Local verification on 2026-09-17 with build networking disabled: `go mod
+vendor` from Nimbus `main`, a temporary spec with `Version: 0.6.0` and the
+generated archive SHA-256, built in the Fedora 44 tooling container as an
+unprivileged user. `rpm -qp` reports the licence expression above, and the
+payload contains `/usr/share/licenses/nimbus/GEANT-CAT.txt` next to the
+existing notices and the engine binary, with no scriptlets. The 0.6.0
+publication records the final archive checksum and COPR build.
+
 ## Source and validation
 
 [`nimbus.spec`](nimbus.spec) expects `nimbus-0.5.10-vendor.tar.gz`, containing the
