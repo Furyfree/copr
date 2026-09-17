@@ -31,7 +31,7 @@ func ParseRelease(data []byte) (Artifact, error) {
 	return a, nil
 }
 
-func packageRelease() (Artifact, error) { return ParseRelease(packagedRelease) }
+func PackagedRelease() (Artifact, error) { return ParseRelease(packagedRelease) }
 
 // LatestRelease resolves metadata only; the proprietary RPM never enters an SRPM.
 func LatestRelease(ctx context.Context) (Artifact, error) { return New().resolve(ctx, "") }

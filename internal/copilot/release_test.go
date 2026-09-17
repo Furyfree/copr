@@ -32,7 +32,7 @@ func TestPackageSelectsAppVersionAndDigest(t *testing.T) {
 }
 
 func TestPackagedReleaseValidation(t *testing.T) {
-	a, err := packageRelease()
+	a, err := PackagedRelease()
 	if err != nil {
 		t.Fatal(err)
 	}
