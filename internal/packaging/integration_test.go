@@ -444,6 +444,7 @@ func TestNativeCheckPackageScope(t *testing.T) {
 	for _, tc := range []struct{ name, targets string }{
 		{"blesh", "./cmd/coprctl ./internal/packaging"},
 		{"nimbus", "./cmd/coprctl ./internal/packaging"},
+		{"nimbus-develop", "./cmd/coprctl ./internal/packaging"},
 		{"voxtype", "./cmd/coprctl ./internal/packaging"},
 		{"github-copilot-installer", "./cmd/coprctl ./internal/packaging ./cmd/github-copilot-installer ./internal/copilot"},
 		{"wowup-cf-installer", "./cmd/coprctl ./internal/packaging ./cmd/wowup-cf-installer ./internal/wowup"},

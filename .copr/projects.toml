@@ -4,6 +4,12 @@ chroots = ["fedora-44-x86_64"]
 description = "Bash line editor with syntax highlighting, suggestions and fzf completion"
 homepage = "https://github.com/akinomyoga/ble.sh"
 
+[projects.nimbus-develop]
+name = "nimbus-develop"
+chroots = ["fedora-44-x86_64"]
+description = "Nimbus develop-channel engine built from the rolling develop source"
+homepage = "https://github.com/Furyfree/nimbus"
+
 [projects.nimbus]
 name = "nimbus"
 chroots = ["fedora-44-x86_64"]

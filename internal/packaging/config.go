@@ -6,12 +6,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/toolbox"
@@ -73,12 +75,23 @@ func CleanEnvironment() []string {
 type Builder struct {
 	Root           string
 	Run            Runner
+	Client         *http.Client
 	CopilotRelease *copilot.Artifact
 	WowupRelease   *wowup.Artifact
 	ToolboxRelease *toolbox.Artifact
 }
 
-func New(root string) *Builder { return &Builder{Root: root, Run: Run} }
+func New(root string) *Builder {
+	return &Builder{Root: root, Run: Run, Client: &http.Client{Timeout: 120 * time.Second}}
+}
+
+// httpClient returns the metadata client, defaulting for tests.
+func (b *Builder) httpClient() *http.Client {
+	if b.Client != nil {
+		return b.Client
+	}
+	return &http.Client{Timeout: 120 * time.Second}
+}
 
 func (b *Builder) command(ctx context.Context, dir, name string, args ...string) ([]byte, error) {
 	return b.Run(ctx, name, args, dir, CleanEnvironment())
@@ -93,6 +106,8 @@ func (b *Builder) Prepare(ctx context.Context, name, out string) (string, error)
 		return "", errors.New("select a configured package")
 	}
 	switch name {
+	case "nimbus-develop":
+		return b.prepareNimbusDevelop(ctx, out)
 	case "voxtype":
 		return b.prepareVoxtype(ctx, out)
 	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer":
