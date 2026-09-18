@@ -8,6 +8,7 @@ Fedora 44 x86_64 packages and installer helpers.
 | [nimbus](packages/nimbus/README.md) | Nimbus engine |
 | [voxtype](packages/voxtype/README.md) | Voxtype speech-to-text daemon |
 | [librepods](packages/librepods/README.md) | Headless AirPods daemon with Noctalia integration |
+| [woeusb](packages/woeusb/README.md) | Create bootable Windows USB installation media |
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
 | [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install and update the official JetBrains Toolbox App without autostart |
