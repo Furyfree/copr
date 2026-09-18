@@ -53,6 +53,14 @@ go test -mod=vendor ./...
 
 %install
 install -Dpm 0755 nimbus %{buildroot}%{_bindir}/nimbus
+install -Dpm 0755 system/root/etc/grub.d/09_nimbus_previous_kernels %{buildroot}/etc/grub.d/09_nimbus_previous_kernels
+install -Dpm 0755 system/root/etc/grub.d/36_paper_dark %{buildroot}/etc/grub.d/36_paper_dark
+install -Dpm 0755 system/root/etc/kernel/install.d/90-nimbus-uki.install %{buildroot}/etc/kernel/install.d/90-nimbus-uki.install
+install -Dpm 0755 system/root/etc/kernel/install.d/96-nimbus-menu.install %{buildroot}/etc/kernel/install.d/96-nimbus-menu.install
+install -Dpm 0755 system/root/usr/lib/dracut/modules.d/40nimbus-plymouth/module-setup.sh %{buildroot}/usr/lib/dracut/modules.d/40nimbus-plymouth/module-setup.sh
+install -Dpm 0644 -t %{buildroot}/boot/grub2/themes/nimbus/ system/root/boot/grub2/themes/nimbus/*
+install -Dpm 0644 -t %{buildroot}/usr/share/plymouth/themes/nimbus/ system/root/usr/share/plymouth/themes/nimbus/*
+install -Dpm 0644 system/root/usr/share/licenses/nimbus-boot-theme/FONT-LICENSE %{buildroot}/usr/share/licenses/nimbus-boot-theme/FONT-LICENSE
 # Retain the bundled modules' notices without installing their source trees.
 mkdir -p bundled-licenses
 find vendor -type f \( -iname 'license*' -o -iname 'copying*' \
@@ -64,6 +72,14 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %license LICENSE bundled-licenses licenses/Unicode-DFS-2016.txt licenses/GEANT-CAT.txt
 %license internal/agentproxy/resources/UPSTREAM-LICENSE.txt
 %{_bindir}/nimbus
+/boot/grub2/themes/nimbus
+/etc/grub.d/09_nimbus_previous_kernels
+/etc/grub.d/36_paper_dark
+/etc/kernel/install.d/90-nimbus-uki.install
+/etc/kernel/install.d/96-nimbus-menu.install
+/usr/lib/dracut/modules.d/40nimbus-plymouth
+/usr/share/licenses/nimbus-boot-theme
+/usr/share/plymouth/themes/nimbus
 
 %changelog
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.10-0.1
