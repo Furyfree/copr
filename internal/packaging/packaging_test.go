@@ -263,7 +263,7 @@ func TestPublicationRoutesAndCleansCredentials(t *testing.T) {
 				if nameTool != "rpm" {
 					t.Fatal(nameTool)
 				}
-				return []byte(name + "\n1\n"), nil
+				return []byte(srpmName(name) + "\n1\n"), nil
 			}
 			submit := p.Submit
 			p.Submit = func(ctx context.Context, args, env []string) error {
