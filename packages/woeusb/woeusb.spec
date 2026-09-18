@@ -53,8 +53,14 @@ sed -i 's/@@WOEUSB_VERSION@@/%{version}/g' %{buildroot}%{_mandir}/man1/woeusb.1
 install -Dpm 0644 %{SOURCE2} %{buildroot}%{_licensedir}/%{name}/GPL-3.0-or-later.txt
 
 %check
-test "$(bash %{SOURCE0} --version)" = "%{version}"
-bash %{SOURCE0} --no-color --help | grep -F -- '--device'
+stub_directory="$(mktemp -d)"
+trap 'rm -rf "${stub_directory}"' EXIT
+for stub_command in awk blockdev cut dd df du find grep id lsblk mkdir mount parted partprobe readlink rm stat stty wget wimlib-imagex wipefs mkdosfs mkntfs grub-install; do
+    printf '#!/bin/sh\nexit 0\n' > "${stub_directory}/${stub_command}"
+    chmod 0755 "${stub_directory}/${stub_command}"
+done
+test "$(PATH="${stub_directory}:${PATH}" bash %{SOURCE0} --version)" = "%{version}"
+PATH="${stub_directory}:${PATH}" bash %{SOURCE0} --no-color --help | grep -F -- '--device'
 
 %files
 %license %{_licensedir}/%{name}/GPL-3.0-or-later.txt
