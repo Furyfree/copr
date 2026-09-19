@@ -21,7 +21,7 @@ import (
 const developReleaseURL = "https://api.github.com/repos/Furyfree/nimbus/releases/tags/develop"
 
 var (
-	developVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+~dev\.[0-9]{8}git[0-9a-f]{12}$`)
+	developVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+~dev\.[0-9]{14}$`)
 	developArchive = regexp.MustCompile(`^nimbus-(.+)-vendor\.tar\.gz$`)
 )
 
