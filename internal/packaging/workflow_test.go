@@ -151,7 +151,7 @@ func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 	if !ok {
 		t.Fatal("missing preparation script")
 	}
-	for _, name := range []string{"blesh", "nimbus", "nimbus-develop", "voxtype", "librepods", "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
+	for _, name := range []string{"blesh", "nimbus", "nimbus-develop", "voxtype", "librepods", "woeusb", "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
 		t.Run(name, func(t *testing.T) {
 			temp := t.TempDir()
 			bin := filepath.Join(temp, "bin")

@@ -28,6 +28,12 @@ chroots = ["fedora-44-x86_64"]
 description = "LibrePods fork with a headless daemon and Noctalia AirPods integration"
 homepage = "https://github.com/harveywuk/librepods"
 
+[projects.woeusb]
+name = "woeusb"
+chroots = ["fedora-44-x86_64"]
+description = "Create bootable Windows USB installation media from Linux"
+homepage = "https://github.com/WoeUSB/WoeUSB"
+
 [projects.github-copilot-installer]
 name = "github-copilot-installer"
 chroots = ["fedora-44-x86_64"]
