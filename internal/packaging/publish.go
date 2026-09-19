@@ -114,6 +114,15 @@ func (p *Publisher) request(ctx context.Context, method, path string, a account,
 	return nil
 }
 
+// srpmName maps a COPR project to the package name its SRPM carries. The
+// develop channel builds the same nimbus package into its own project.
+func srpmName(packageName string) string {
+	if packageName == "nimbus-develop" {
+		return "nimbus"
+	}
+	return packageName
+}
+
 func (p *Publisher) Publish(ctx context.Context, action, name, srpm string) error {
 	if action != "project" && action != "build" {
 		return errors.New("unknown COPR operation")
@@ -149,7 +158,7 @@ func (p *Publisher) Publish(ctx context.Context, action, name, srpm string) erro
 		if err != nil {
 			return errors.New("cannot verify SRPM identity")
 		}
-		if string(identity) != name+"\n1\n" {
+		if string(identity) != srpmName(name)+"\n1\n" {
 			return errors.New("SRPM identity does not match selected package")
 		}
 	}

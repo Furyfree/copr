@@ -1,10 +1,12 @@
-# Source0 contains the reviewed release source and its vendored modules,
-# rooted at nimbus-%{version}/.
+# Source0 is the rolling develop release asset rebuilt by the nimbus
+# develop workflow on every push; prepare replaces the version and digest
+# with the asset it resolves before building the SRPM.
 %global debug_package %{nil}
-%global source_sha256 4f0959aef43e994fb63a59f12f87e6d2c2255785b6abeab60f6d3cd9257e29d3
+%global source_sha256 0000000000000000000000000000000000000000000000000000000000000000
+%global develop_asset nimbus-0.6.1.dev.00000000000000-vendor.tar.gz
 
 Name:           nimbus
-Version:        0.5.10
+Version:        0.6.1~dev.00000000000000
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -12,7 +14,7 @@ Summary:        Personal Fedora workstation installer and system manager
 # has no identifier for it.
 License:        MIT AND BSD-3-Clause AND Apache-2.0 AND Unicode-DFS-2016 AND LicenseRef-GEANT-CAT
 URL:            https://github.com/Furyfree/nimbus
-Source0:        %{url}/releases/download/v%{version}/nimbus-%{version}-vendor.tar.gz
+Source0:        %{url}/releases/download/develop/%{develop_asset}
 ExclusiveArch:  x86_64
 
 BuildRequires:  golang >= 1.26.7
@@ -82,6 +84,9 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Thu Sep 18 2026 Nimbus maintainers - 0.6.1~dev-0.1
+- Rolling develop-channel build from the develop branch.
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.10-0.1
 - Verify DTU certificate labels through native SELinux checks.
 - Report specific certificate metadata and labeling failures.
