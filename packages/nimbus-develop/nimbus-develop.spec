@@ -3,10 +3,10 @@
 # with the asset it resolves before building the SRPM.
 %global debug_package %{nil}
 %global source_sha256 0000000000000000000000000000000000000000000000000000000000000000
-%global develop_asset nimbus-0.6.0.dev.00000000git000000000000-vendor.tar.gz
+%global develop_asset nimbus-0.6.1.dev.00000000000000-vendor.tar.gz
 
 Name:           nimbus
-Version:        0.6.0~dev.00000000git000000000000
+Version:        0.6.1~dev.00000000000000
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -84,7 +84,7 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
-* Thu Sep 18 2026 Nimbus maintainers - 0.6.0~dev-0.1
+* Thu Sep 18 2026 Nimbus maintainers - 0.6.1~dev-0.1
 - Rolling develop-channel build from the develop branch.
 
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.10-0.1
