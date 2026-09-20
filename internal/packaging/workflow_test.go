@@ -166,9 +166,6 @@ func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 				t.Fatalf("preparation failed: %v %s", err, out)
 			}
 			want := "prepare\n" + name + "\n/output\n"
-			if _, helper := helperImplementations[name]; helper {
-				want += "--latest\n"
-			}
 			if !strings.HasSuffix(string(out), want) {
 				t.Fatalf("wrong release selection: %s", out)
 			}

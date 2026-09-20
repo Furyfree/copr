@@ -78,14 +78,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/copr-srpm"
-          arguments=(prepare "$PACKAGE" /output)
-          if [[ "$PACKAGE" == github-copilot-installer || "$PACKAGE" == wowup-cf-installer || "$PACKAGE" == jetbrains-toolbox-installer ]]; then
-            arguments+=(--latest)
-          fi
           docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
             -v "$GITHUB_WORKSPACE:/work:ro" -v "$RUNNER_TEMP/copr-tools:/tools:ro" \
             -v "$RUNNER_TEMP/copr-srpm:/output" \
-            copr-tools /tools/coprctl "${arguments[@]}"
+            copr-tools /tools/coprctl prepare "$PACKAGE" /output
       - name: Create project or submit build
         shell: bash
         env:

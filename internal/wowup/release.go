@@ -3,16 +3,14 @@ package wowup
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
-)
 
-//go:embed release.json
-var packagedRelease []byte
+	"github.com/Furyfree/copr/internal/pins"
+)
 
 // ParseRelease validates the release selected by the signed installer RPM.
 func ParseRelease(data []byte) (Artifact, error) {
@@ -31,7 +29,13 @@ func ParseRelease(data []byte) (Artifact, error) {
 	return a, nil
 }
 
-func PackagedRelease() (Artifact, error) { return ParseRelease(packagedRelease) }
+func PackagedRelease() (Artifact, error) {
+	data, err := pins.Lookup(pins.Wowup)
+	if err != nil {
+		return Artifact{}, err
+	}
+	return ParseRelease(data)
+}
 
 // LatestRelease reads metadata only; application bytes never enter the SRPM.
 func LatestRelease(ctx context.Context) (Artifact, error) {

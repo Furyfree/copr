@@ -250,15 +250,13 @@ To retain a source RPM with the native tooling available:
 just prepare wowup-cf-installer /tmp/wowup-cf-installer-srpm
 ~~~
 
-After review and merge, `just publish wowup-cf-installer` resolves the latest
-stable official release metadata and builds the helper with that version and
-SHA-256. It does not download or bundle the application on COPR. Local
-`prepare` uses the checked-in release pin; add `--latest` to the `coprctl
-prepare` command to resolve current metadata without publishing. Source
-preparation bundles this helper and its required Go modules; binary builds are
-offline. The installed helper needs no Python runtime or upstream API credential.
-Update the Go helper version constant, spec and manual together. See
-[publishing](../../README.md#publishing).
+After review and merge, `just publish wowup-cf-installer` builds the helper
+from `internal/pins/pins.json`. It does not download or bundle the application
+on COPR. Refresh that file with `just refresh-pins` before publishing a newer
+WoWUp release. Source preparation bundles this helper and its required Go
+modules; binary builds are offline. The installed helper needs no Python
+runtime or upstream API credential. Update the Go helper version constant,
+spec and manual together. See [publishing](../../README.md#publishing).
 
 ## Why the application is downloaded separately
 

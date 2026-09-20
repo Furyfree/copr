@@ -5,12 +5,12 @@ The Go helper and tests live in `cmd/jetbrains-toolbox-installer` and
 recipe. Builds use these local sources and do not fetch or redistribute the
 application.
 
-Release **0.1.0-0.1.app3.8.0.87909** selects official JetBrains Toolbox
-**3.8.0.87909** and automatically manages installation and removal through DNF.
-Published on 2026-09-16 as
+The helper selects the official JetBrains Toolbox build recorded in
+`internal/pins/pins.json` and automatically manages installation and removal
+through DNF. The 3.8.0.87909 pin was published on 2026-09-16 as
 [COPR build 10992750](https://copr.fedorainfracloud.org/coprs/furyfree/jetbrains-toolbox-installer/build/10992750/)
 and installed on the owner's workstation: the one-shot systemd job completed,
-and `status --json` reports `installed`, `verified` and `integrated` for
+and `status --json` reported `installed`, `verified` and `integrated` for
 3.8.0.87909. The self-update failure path remains an acceptance check.
 
 ## Installation and updates
@@ -229,13 +229,11 @@ and verifies the deferred installer scriptlets and service.
 just prepare jetbrains-toolbox-installer /tmp/jetbrains-toolbox-installer-srpm
 ~~~
 
-After review and merge, `just publish jetbrains-toolbox-installer` resolves the
-latest stable official release metadata and builds the helper with that build
-number and SHA-256. It does not download or bundle the application on COPR.
-Local `prepare` uses the checked-in release pin; add `--latest` to the
-`coprctl prepare` command to resolve current metadata without publishing.
-Update the Go helper version constant, spec and manual together.
-See [publishing](../../README.md#publishing).
+After review and merge, `just publish jetbrains-toolbox-installer` builds the
+helper from `internal/pins/pins.json`. It does not download or bundle the
+application on COPR. Refresh that file with `just refresh-pins` before
+publishing a newer Toolbox build. Update the Go helper version constant, spec
+and manual together. See [publishing](../../README.md#publishing).
 
 ## Why the application is downloaded separately
 

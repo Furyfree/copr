@@ -28,7 +28,7 @@ func run(ctx context.Context, args []string) error {
 	}
 	b := packaging.New(abs)
 	if len(args) == 0 {
-		return fmt.Errorf("usage: coprctl [--root DIR] prepare PACKAGE OUTDIR | srpm --spec FILE --outdir DIR | project PACKAGE | publish PACKAGE SRPM | verify-specs [PACKAGE] | pin-status")
+		return fmt.Errorf("usage: coprctl [--root DIR] prepare PACKAGE OUTDIR | srpm --spec FILE --outdir DIR | project PACKAGE | publish PACKAGE SRPM | verify-specs [PACKAGE] | pin-status | refresh-pins")
 	}
 	switch args[0] {
 	case "prepare":
@@ -133,9 +133,14 @@ func run(ctx context.Context, args []string) error {
 			fmt.Printf("%-32s pinned %-16s latest %-16s %s\n", pin.Package, pin.PinnedVersion, pin.LatestVersion, pin.Status())
 		}
 		if stale {
-			return fmt.Errorf("installer pins are stale; update internal/<implementation>/release.json and the spec app_version, then publish")
+			return fmt.Errorf("installer pins are stale; run just refresh-pins, then publish")
 		}
 		return nil
+	case "refresh-pins":
+		if len(args) != 1 {
+			return fmt.Errorf("refresh-pins takes no arguments")
+		}
+		return b.RefreshPins(ctx)
 	default:
 		return fmt.Errorf("unknown operation %q", args[0])
 	}
