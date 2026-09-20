@@ -54,6 +54,7 @@ go test -mod=vendor ./...
 %install
 install -Dpm 0755 nimbus %{buildroot}%{_bindir}/nimbus
 install -Dpm 0755 system/root/etc/grub.d/09_nimbus_previous_kernels %{buildroot}/etc/grub.d/09_nimbus_previous_kernels
+install -Dpm 0755 system/root/etc/grub.d/30_previous_kernels_nimbus %{buildroot}/etc/grub.d/30_previous_kernels_nimbus
 install -Dpm 0755 system/root/etc/grub.d/36_paper_dark %{buildroot}/etc/grub.d/36_paper_dark
 install -Dpm 0755 system/root/etc/kernel/install.d/96-nimbus-menu.install %{buildroot}/etc/kernel/install.d/96-nimbus-menu.install
 install -Dpm 0755 system/root/usr/lib/dracut/modules.d/40nimbus-plymouth/module-setup.sh %{buildroot}/usr/lib/dracut/modules.d/40nimbus-plymouth/module-setup.sh
@@ -73,6 +74,7 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 %{_bindir}/nimbus
 /boot/grub2/themes/nimbus
 /etc/grub.d/09_nimbus_previous_kernels
+/etc/grub.d/30_previous_kernels_nimbus
 /etc/grub.d/36_paper_dark
 /etc/kernel/install.d/96-nimbus-menu.install
 /usr/lib/dracut/modules.d/40nimbus-plymouth
