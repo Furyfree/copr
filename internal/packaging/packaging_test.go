@@ -24,6 +24,19 @@ func repository(t *testing.T) string {
 	}
 	return root
 }
+
+func TestHelperSpecsUseSharedPinFile(t *testing.T) {
+	root := repository(t)
+	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
+		data, err := os.ReadFile(filepath.Join(root, "packages", name, name+".spec"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Contains(data, []byte("%global app_version pin\n")) {
+			t.Fatalf("%s must take its app version from internal/pins/pins.json", name)
+		}
+	}
+}
 func write(t *testing.T, path, data string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

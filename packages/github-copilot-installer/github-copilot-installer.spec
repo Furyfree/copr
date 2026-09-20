@@ -1,5 +1,5 @@
 %global debug_package %{nil}
-%global app_version 1.1.17
+%global app_version pin
 
 Name:           github-copilot-installer
 Version:        0.3.0
@@ -74,6 +74,9 @@ fi
 %{_unitdir}/github-copilot-installer.service
 
 %changelog
+* Sat Sep 20 2026 COPR maintainers - 0.3.0-0.1.app1.1.22
+- Pin GitHub Copilot 1.1.22.
+
 * Fri Sep 11 2026 COPR maintainers - 0.3.0-0.1.app1.1.17
 - Pin the selected app version and digest in the signed helper package.
 - Automatically queue native app installation after package installs and upgrades.

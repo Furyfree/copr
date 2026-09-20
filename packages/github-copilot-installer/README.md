@@ -134,12 +134,8 @@ systemd-host install/upgrade/retry drill is run; those require a disposable VM.
 just prepare github-copilot-installer /tmp/github-copilot-installer-srpm
 ~~~
 
-Local preparation uses the checked-in release pin. To select the latest stable
-release without publishing, use:
-
-~~~sh
-go run ./cmd/coprctl prepare github-copilot-installer /tmp/copilot-latest --latest
-~~~
+Local preparation uses `internal/pins/pins.json`. Refresh that file with
+`just refresh-pins` before publishing a newer Copilot release.
 
 Preparation bundles only this helper, its release metadata and tests, with
 any needed Go modules. It does not download the app RPM.
@@ -150,7 +146,7 @@ and spec together. The app version is also part of the RPM release. Retain the
 upstream MIT attribution when modifying the port.
 
 After review and merge, `just publish github-copilot-installer` prepares this
-helper with the latest stable app pin and publishes the helper only. Verify its
+helper from `internal/pins/pins.json` and publishes the helper only. Verify its
 signing key before Nimbus integration. The published
 0.1.2 RPM remains the Bash implementation until the Go candidate is explicitly
 published. See [publishing](../../README.md#publishing).

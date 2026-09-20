@@ -1,5 +1,5 @@
 %global debug_package %{nil}
-%global app_version 2.23.1
+%global app_version pin
 
 Name:           wowup-cf-installer
 Version:        0.3.0

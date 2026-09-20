@@ -22,6 +22,10 @@ test:
 check-pins:
     go run ./cmd/coprctl pin-status
 
+# Write the latest stable installer releases into internal/pins/pins.json.
+refresh-pins:
+    go run ./cmd/coprctl refresh-pins
+
 # Shared tooling and one package's tests, spec and native RPM checks.
 check-package package: _check-style
     #!/usr/bin/env bash

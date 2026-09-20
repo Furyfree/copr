@@ -3,14 +3,12 @@ package copilot
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"io"
-)
 
-//go:embed release.json
-var packagedRelease []byte
+	"github.com/Furyfree/copr/internal/pins"
+)
 
 // ParseRelease validates the release metadata bundled into the signed helper RPM.
 func ParseRelease(data []byte) (Artifact, error) {
@@ -31,7 +29,13 @@ func ParseRelease(data []byte) (Artifact, error) {
 	return a, nil
 }
 
-func PackagedRelease() (Artifact, error) { return ParseRelease(packagedRelease) }
+func PackagedRelease() (Artifact, error) {
+	data, err := pins.Lookup(pins.Copilot)
+	if err != nil {
+		return Artifact{}, err
+	}
+	return ParseRelease(data)
+}
 
 // LatestRelease resolves metadata only; the proprietary RPM never enters an SRPM.
 func LatestRelease(ctx context.Context) (Artifact, error) { return New().resolve(ctx, "") }

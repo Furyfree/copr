@@ -27,6 +27,7 @@ Tools and tests use Go, with Bash for small wrappers. Package recipes live in
 just check-container                        # full offline gate; requires Docker
 just test                                   # unit tests; requires Go 1.26.7+
 just check-pins                             # report stale installer pins; needs network
+just refresh-pins                           # write latest stable installer pins to internal/pins/pins.json
 just prepare voxtype /tmp/voxtype-srpm        # optional local source RPM; requires Go and Fedora build tools
 ```
 
@@ -42,10 +43,11 @@ forgotten refresh becomes visible. The check makes unauthenticated GitHub API
 requests, and GitHub disables scheduled workflows after 60 days without
 repository activity; dispatch the workflow manually if it has gone quiet.
 
-Refresh a stale pin by updating `internal/<implementation>/release.json`
-(version, source, sha256) and the spec's `%global app_version`, then commit and
-publish. `just publish PACKAGE` resolves the latest release for the SRPM, but
-native COPR builds through `.copr/Makefile` use the checked-in pin.
+Installer application versions live in `internal/pins/pins.json`. That is the
+only file a pin bump should edit. `just refresh-pins` fills it from the latest
+stable upstream releases, including source URLs and SHA-256 digests. Specs
+read the version at SRPM preparation. `just publish PACKAGE` builds the helper
+from that file; native COPR rebuilds use the same pin.
 
 ## Publishing
 
@@ -58,8 +60,8 @@ just publish voxtype                        # publish one package
 
 `publish` prepares the source RPM, creates/verifies the COPR project, and builds
 and publishes the package. You do not need to run `prepare` or `project` first.
-For Copilot, WoWUp and JetBrains Toolbox, publication resolves the latest stable
-upstream release and embeds its version and SHA-256 in the helper. The app version advances the RPM
+For Copilot, WoWUp and JetBrains Toolbox, publication embeds the application
+release from `internal/pins/pins.json`. The app version advances the RPM
 release, so DNF sees a package update. Application artifacts are downloaded only
 on the computer that installs the helper.
 Use `just project voxtype` only to create/verify the project without a build.

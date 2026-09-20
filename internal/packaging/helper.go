@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/pins"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
@@ -55,50 +56,59 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 	if !ok {
 		return "", errors.New("unknown installer helper")
 	}
-	for _, path := range []string{filepath.Join("cmd", name), filepath.Join("internal", implementation)} {
+	for _, path := range []string{filepath.Join("cmd", name), filepath.Join("internal", implementation), filepath.Join("internal", "pins")} {
 		if err := copyTree(filepath.Join(b.Root, path), filepath.Join(tree, path)); err != nil {
 			return "", err
 		}
 	}
-	pin := filepath.Join(tree, "internal", implementation, "release.json")
-	data, err := os.ReadFile(filepath.Join(b.Root, "internal", implementation, "release.json"))
+	data, err := os.ReadFile(filepath.Join(b.Root, "internal", "pins", "pins.json"))
+	if err != nil {
+		return "", err
+	}
+	var override []byte
+	switch name {
+	case pins.Copilot:
+		if b.CopilotRelease != nil {
+			override, err = json.Marshal(b.CopilotRelease)
+		}
+	case pins.Wowup:
+		if b.WowupRelease != nil {
+			override, err = json.Marshal(b.WowupRelease)
+		}
+	case pins.Toolbox:
+		if b.ToolboxRelease != nil {
+			override, err = json.Marshal(b.ToolboxRelease)
+		}
+	}
+	if err != nil {
+		return "", err
+	}
+	if override != nil {
+		data, err = pins.Replace(data, name, override)
+		if err != nil {
+			return "", err
+		}
+	}
+	raw, err := pins.LookupIn(data, name)
 	if err != nil {
 		return "", err
 	}
 	var appVersion string
 	switch name {
-	case "github-copilot-installer":
-		if b.CopilotRelease != nil {
-			data, err = json.MarshalIndent(b.CopilotRelease, "", "  ")
-		}
-		if err != nil {
-			return "", err
-		}
-		a, err := copilot.ParseRelease(data)
+	case pins.Copilot:
+		a, err := copilot.ParseRelease(raw)
 		if err != nil {
 			return "", err
 		}
 		appVersion = a.Version
-	case "wowup-cf-installer":
-		if b.WowupRelease != nil {
-			data, err = json.MarshalIndent(b.WowupRelease, "", "  ")
-		}
-		if err != nil {
-			return "", err
-		}
-		a, err := wowup.ParseRelease(data)
+	case pins.Wowup:
+		a, err := wowup.ParseRelease(raw)
 		if err != nil {
 			return "", err
 		}
 		appVersion = a.Version
-	case "jetbrains-toolbox-installer":
-		if b.ToolboxRelease != nil {
-			data, err = json.MarshalIndent(b.ToolboxRelease, "", "  ")
-		}
-		if err != nil {
-			return "", err
-		}
-		a, err := toolbox.ParseRelease(data)
+	case pins.Toolbox:
+		a, err := toolbox.ParseRelease(raw)
 		if err != nil {
 			return "", err
 		}
@@ -109,7 +119,7 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 		return "", errors.New("expected one app_version macro")
 	}
 	recipe = macro.ReplaceAll(recipe, []byte("%global app_version "+appVersion))
-	if err := os.WriteFile(pin, data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tree, "internal", "pins", "pins.json"), data, 0o644); err != nil {
 		return "", err
 	}
 	if err := Copy(filepath.Join(packageDir, "files", name+".service"), filepath.Join(tree, name+".service")); err != nil {

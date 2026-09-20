@@ -2,9 +2,13 @@ package packaging
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/pins"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
@@ -71,6 +75,50 @@ func HelperPinResolvers() []PinResolver {
 			},
 		},
 	}
+}
+
+// RefreshPins writes the latest stable upstream release for every installer
+// helper into internal/pins/pins.json. It never publishes.
+func (b *Builder) RefreshPins(ctx context.Context) error {
+	copilotRelease, err := copilot.LatestRelease(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", pins.Copilot, err)
+	}
+	toolboxRelease, err := toolbox.LatestRelease(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", pins.Toolbox, err)
+	}
+	wowupRelease, err := wowup.LatestRelease(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", pins.Wowup, err)
+	}
+	file := pins.File{}
+	if file.Copilot, err = pinArtifact(copilotRelease); err != nil {
+		return err
+	}
+	if file.Toolbox, err = pinArtifact(toolboxRelease); err != nil {
+		return err
+	}
+	if file.Wowup, err = pinArtifact(wowupRelease); err != nil {
+		return err
+	}
+	data, err := pins.Encode(file)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(b.Root, "internal", "pins", "pins.json"), data, 0o644)
+}
+
+func pinArtifact(v any) (pins.Artifact, error) {
+	var a pins.Artifact
+	data, err := json.Marshal(v)
+	if err != nil {
+		return a, err
+	}
+	if err := json.Unmarshal(data, &a); err != nil {
+		return a, err
+	}
+	return a, nil
 }
 
 // Pins resolves every pin. It reads release metadata only; it never downloads

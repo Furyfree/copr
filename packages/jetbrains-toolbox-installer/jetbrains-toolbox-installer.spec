@@ -1,5 +1,5 @@
 %global debug_package %{nil}
-%global app_version 3.8.0.87909
+%global app_version pin
 
 Name:           jetbrains-toolbox-installer
 Version:        0.1.0
@@ -103,6 +103,9 @@ fi
 %{_mandir}/man1/jetbrains-toolbox-installer.1*
 
 %changelog
+* Sat Sep 20 2026 COPR maintainers - 0.1.0-0.1.app3.8.1.88030
+- Pin JetBrains Toolbox 3.8.1.88030.
+
 * Wed Sep 16 2026 COPR maintainers - 0.1.0-0.1.app3.8.0.87909
 - Automatically queue verified installation of the package-selected Toolbox App.
 - Verify the published SHA-256 and unpack the archive without executing it.

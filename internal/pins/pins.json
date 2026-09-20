@@ -1,0 +1,29 @@
+{
+  "github-copilot-installer": {
+    "schema_version": 1,
+    "version": "1.1.22",
+    "name": "github",
+    "arch": "x86_64",
+    "sha256": "dbbd3423e5f2026f6dd315572542914ac4c2f4a9ac619eb0640fe817c8e151a2",
+    "path": "",
+    "source": "https://github.com/github/app/releases/download/v1.1.22/GitHub-Copilot-linux-x64.rpm"
+  },
+  "jetbrains-toolbox-installer": {
+    "schema_version": 1,
+    "version": "3.8.1.88030",
+    "name": "jetbrains-toolbox",
+    "arch": "x86_64",
+    "sha256": "25cbe2ad027f5a5749bf8d8ae7c2215a8665403cfe94ff5d05cd48b25daac345",
+    "path": "",
+    "source": "https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.8.1.88030.tar.gz"
+  },
+  "wowup-cf-installer": {
+    "schema_version": 1,
+    "version": "2.23.1",
+    "name": "wowup-cf",
+    "arch": "x86_64",
+    "sha256": "8d74c8fd24af4904dfd47b608ea6f4c55d578fd9dd70ad176b81f7edf139c7d9",
+    "path": "",
+    "source": "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.1/WowUp-CF-2.23.1.AppImage"
+  }
+}
