@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 9bda818a1d6420654bb5a3103e068ebbbb6a14d6a3148f4c8142546f9eef959b
+%global source_sha256 aabb46141732e8f311e939d31bf6fe00797100837c060c783b307640cc236f39
 
 Name:           nimbus
-Version:        0.6.1
+Version:        0.6.2
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -82,6 +82,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Sun Sep 20 2026 Nimbus maintainers - 0.6.2-0.1
+- Record selectors from before engine channels as schema 2 during sync.
+- Remove the one-time channel notice and its stored display record.
+
 * Sun Sep 20 2026 Nimbus maintainers - 0.6.1-0.1
 - Ship the Paper Dark GRUB and Plymouth themes and the grouped kernel menu.
 - Add engine channels, passphrase unlock with greetd auto-login, and the
