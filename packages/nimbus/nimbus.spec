@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 4f0959aef43e994fb63a59f12f87e6d2c2255785b6abeab60f6d3cd9257e29d3
+%global source_sha256 9bda818a1d6420654bb5a3103e068ebbbb6a14d6a3148f4c8142546f9eef959b
 
 Name:           nimbus
-Version:        0.5.10
+Version:        0.6.1
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -82,6 +82,12 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Sun Sep 20 2026 Nimbus maintainers - 0.6.1-0.1
+- Ship the Paper Dark GRUB and Plymouth themes and the grouped kernel menu.
+- Add engine channels, passphrase unlock with greetd auto-login, and the
+  NVIDIA desktop boot display drop-in.
+- Require this engine from the definitions (min_engine 0.6.1).
+
 * Mon Sep 14 2026 Nimbus maintainers - 0.5.10-0.1
 - Verify DTU certificate labels through native SELinux checks.
 - Report specific certificate metadata and labeling failures.
