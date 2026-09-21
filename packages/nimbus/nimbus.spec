@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 43d32b5771c635456424b3354c06618324d70fe2e1fa3db15449892c00957ce5
+%global source_sha256 b0ac45e36a30d7ed533562721d194076a2b02d5c3938622c167d1597abdbfb52
 
 Name:           nimbus
-Version:        0.6.4
+Version:        0.6.6
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -82,6 +82,11 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Tue Sep 22 2026 Nimbus maintainers - 0.6.6-0.1
+- Fix service installation ordering and defer uncertain repository cleanup.
+- Add channel switching, Nix daemon setup and live setup status improvements.
+- Isolate the test data directory for clean build environments.
+
 * Mon Sep 21 2026 Nimbus maintainers - 0.6.4-0.1
 - Accept Fedora timeout policy during Zeron and agent-proxy removal.
 - Check service ownership before approval and deselect the Copilot app.
