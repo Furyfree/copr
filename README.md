@@ -1,71 +1,61 @@
 # COPR packaging
 
-Fedora 44 x86_64 packages and installer helpers.
+Fedora 44 x86_64 RPM recipes and installer helpers.
 
 | Package | Purpose |
 | --- | --- |
-| [blesh](packages/blesh/README.md) | Bash highlighting, suggestions and fzf completion |
-| [nimbus](packages/nimbus/README.md) | Nimbus engine |
-| [voxtype](packages/voxtype/README.md) | Voxtype speech-to-text daemon |
-| [librepods](packages/librepods/README.md) | Headless AirPods daemon with Noctalia integration |
-| [woeusb](packages/woeusb/README.md) | Create bootable Windows USB installation media |
-| [github-copilot-installer](packages/github-copilot-installer/README.md) | Automatically install the Copilot release selected by the package |
-| [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install and update the official WoWUp CurseForge AppImage |
-| [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install and update the official JetBrains Toolbox App without autostart |
-
-Installer helpers do not bundle their applications. Copilot, WoWUp and JetBrains
-Toolbox automatically queue the selected app's download and installation when
-the helper package is installed or upgraded.
-See each package's README for installation, status and release details.
+| [blesh](packages/blesh/README.md) | Bash highlighting, suggestions and completion |
+| [nimbus](packages/nimbus/README.md) | Fedora workstation installer and system manager |
+| [nimbus-develop](packages/nimbus-develop/README.md) | Nimbus development channel |
+| [voxtype](packages/voxtype/README.md) | Push-to-talk speech transcription |
+| [librepods](packages/librepods/README.md) | AirPods controls with Noctalia integration |
+| [woeusb](packages/woeusb/README.md) | Create Windows installation USB media |
+| [github-copilot-installer](packages/github-copilot-installer/README.md) | Install the official GitHub Copilot application |
+| [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install WoWUp with CurseForge |
+| [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install JetBrains Toolbox |
 
 ## Development
 
-Tools and tests use Go, with Bash for small wrappers. Package recipes live in
-`packages/`; shared development rules are in [AGENTS.md](AGENTS.md).
+Install Go (the version in [go.mod](go.mod) or newer) and Just for unit tests,
+or use Docker for the full Fedora checks.
 
 ```sh
-just check-container                        # full offline gate; requires Docker
-just test                                   # unit tests; requires Go 1.26.7+
-just check-pins                             # report stale installer pins; needs network
-just refresh-pins                           # write latest stable installer pins to internal/pins/pins.json
-just prepare voxtype /tmp/voxtype-srpm        # optional local source RPM; requires Go and Fedora build tools
+just test
+just check-container
+just prepare PACKAGE /tmp/package-srpm
 ```
 
-Local checks and CI share [build/Containerfile](build/Containerfile).
-`prepare` is for local testing and does not publish anything.
+`prepare` creates a source RPM for local testing and requires the Fedora tools
+in [build/Containerfile](build/Containerfile). Source preparation and the initial
+container image build need network access; the full test gate runs offline.
 Run `just --list` for all commands.
 
-`just check-pins` resolves the latest stable upstream release for Copilot,
-WoWUp and JetBrains Toolbox and reports how each checked-in pin differs; it
-reads metadata only and never publishes. The scheduled "Installer pins"
-workflow runs the same check weekly and fails while a pin is stale, so a
-forgotten refresh becomes visible. The check makes unauthenticated GitHub API
-requests, and GitHub disables scheduled workflows after 60 days without
-repository activity; dispatch the workflow manually if it has gone quiet.
+## Installer release pins
 
-Installer application versions live in `internal/pins/pins.json`. That is the
-only file a pin bump should edit. `just refresh-pins` fills it from the latest
-stable upstream releases, including source URLs and SHA-256 digests. Specs
-read the version at SRPM preparation. `just publish PACKAGE` builds the helper
-from that file; native COPR rebuilds use the same pin.
+```sh
+just check-pins
+just refresh-pins
+```
+
+Both commands need network access. `check-pins` reports outdated releases;
+`refresh-pins` updates [internal/pins/pins.json](internal/pins/pins.json).
+Review, commit and push that file before publishing the affected helpers.
+The weekly Installer pins workflow also checks for outdated releases.
 
 ## Publishing
 
 Configure the GitHub Actions variable `COPR_OWNER` and secret `COPR_CONFIG`
 using your [COPR API configuration](https://copr.fedorainfracloud.org/api/).
+Authenticate the GitHub CLI, then run:
 
 ```sh
-just publish voxtype                        # publish one package
+just publish PACKAGE
 ```
 
-`publish` prepares the source RPM, creates/verifies the COPR project, and builds
-and publishes the package. You do not need to run `prepare` or `project` first.
-For Copilot, WoWUp and JetBrains Toolbox, publication embeds the application
-release from `internal/pins/pins.json`. The app version advances the RPM
-release, so DNF sees a package update. Application artifacts are downloaded only
-on the computer that installs the helper.
-Use `just project voxtype` only to create/verify the project without a build.
+Replace `PACKAGE` with a name from the table. Publication uses remote `main`,
+checks the selected package, prepares its source RPM, creates or verifies its
+COPR project, and submits the build. Use `just project PACKAGE` to create or
+verify the project without building. Pushes and pull requests run checks only.
 
-Replace `voxtype` with any package listed above. Publishing requires an
-authenticated GitHub CLI and uses remote `main`. Pushes and pull requests run
-full checks only; publication is manual and checks shared tooling plus the selected package.
+Installer helper builds use the checked-in release pins. They download their
+applications on the destination computer; COPR contains only the helpers.

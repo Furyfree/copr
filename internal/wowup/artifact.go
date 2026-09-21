@@ -17,6 +17,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/Furyfree/copr/internal/pins"
 )
 
 const Version = "0.3.0"
@@ -25,15 +27,7 @@ const maxArtifact = 1024 * 1024 * 1024
 var stableVersion = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
 var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
-type Artifact struct {
-	SchemaVersion int    `json:"schema_version"`
-	Version       string `json:"version"`
-	Name          string `json:"name"`
-	Arch          string `json:"arch"`
-	SHA256        string `json:"sha256"`
-	Path          string `json:"path"`
-	Source        string `json:"source"`
-}
+type Artifact pins.Artifact
 
 func sourceURL(version string) string {
 	return "https://github.com/WowUp/WowUp.CF/releases/download/v" + version + "/WowUp-CF-" + version + ".AppImage"

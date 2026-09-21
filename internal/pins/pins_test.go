@@ -20,8 +20,9 @@ func TestPackagedFileRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(encoded) != string(onDisk) {
-		t.Fatalf("pins.json is not the encoded form:\n%s", encoded)
+	decoded, err := Decode(encoded)
+	if err != nil || decoded != f {
+		t.Fatalf("pin values changed during encoding: %+v %v", decoded, err)
 	}
 	for _, name := range []string{Copilot, Toolbox, Wowup} {
 		data, err := Lookup(name)

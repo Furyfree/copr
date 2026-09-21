@@ -21,6 +21,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/Furyfree/copr/internal/pins"
 )
 
 const Version = "0.3.0"
@@ -194,15 +196,7 @@ func (e *Installer) fetch(ctx context.Context, raw string, destination string) (
 	return nil, errors.Join(copyErr, f.Close())
 }
 
-type Artifact struct {
-	SchemaVersion int    `json:"schema_version"`
-	Version       string `json:"version"`
-	Name          string `json:"name"`
-	Arch          string `json:"arch"`
-	SHA256        string `json:"sha256"`
-	Path          string `json:"path"`
-	Source        string `json:"source"`
-}
+type Artifact pins.Artifact
 
 func (e *Installer) resolve(ctx context.Context, version string) (Artifact, error) {
 	var a Artifact

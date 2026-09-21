@@ -1,6 +1,7 @@
 package packaging
 
 import (
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,11 +26,7 @@ func TestWorkflowPackageRouting(t *testing.T) {
 	if len(choice) != 2 {
 		t.Fatal("missing package choices")
 	}
-	var names []string
-	for name := range config.Projects {
-		names = append(names, name)
-	}
-	slices.Sort(names)
+	names := slices.Sorted(maps.Keys(config.Projects))
 	choices := strings.Split(choice[1], ", ")
 	slices.Sort(choices)
 	if !slices.Equal(names, choices) {
@@ -136,7 +133,7 @@ func TestWorkflowCheckRouting(t *testing.T) {
 	}
 }
 
-func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
+func TestWorkflowPreparesSelectedPackage(t *testing.T) {
 	root := repository(t)
 	data, err := os.ReadFile(filepath.Join(root, ".github/workflows/copr.yml"))
 	if err != nil {
@@ -151,7 +148,11 @@ func TestWorkflowSelectsLatestInstallerRelease(t *testing.T) {
 	if !ok {
 		t.Fatal("missing preparation script")
 	}
-	for _, name := range []string{"blesh", "nimbus", "nimbus-develop", "voxtype", "librepods", "woeusb", "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
+	config, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range slices.Sorted(maps.Keys(config.Projects)) {
 		t.Run(name, func(t *testing.T) {
 			temp := t.TempDir()
 			bin := filepath.Join(temp, "bin")

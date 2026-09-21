@@ -2,7 +2,6 @@ package packaging
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -92,33 +91,12 @@ func (b *Builder) RefreshPins(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", pins.Wowup, err)
 	}
-	file := pins.File{}
-	if file.Copilot, err = pinArtifact(copilotRelease); err != nil {
-		return err
-	}
-	if file.Toolbox, err = pinArtifact(toolboxRelease); err != nil {
-		return err
-	}
-	if file.Wowup, err = pinArtifact(wowupRelease); err != nil {
-		return err
-	}
+	file := pins.File{Copilot: pins.Artifact(copilotRelease), Toolbox: pins.Artifact(toolboxRelease), Wowup: pins.Artifact(wowupRelease)}
 	data, err := pins.Encode(file)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(b.Root, "internal", "pins", "pins.json"), data, 0o644)
-}
-
-func pinArtifact(v any) (pins.Artifact, error) {
-	var a pins.Artifact
-	data, err := json.Marshal(v)
-	if err != nil {
-		return a, err
-	}
-	if err := json.Unmarshal(data, &a); err != nil {
-		return a, err
-	}
-	return a, nil
 }
 
 // Pins resolves every pin. It reads release metadata only; it never downloads

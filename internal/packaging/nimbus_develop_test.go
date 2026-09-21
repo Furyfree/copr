@@ -1,8 +1,8 @@
 package packaging
 
 import (
-	"context"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -10,22 +10,21 @@ import (
 
 const developDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
-func developFixture(t *testing.T, release, sums string) func(context.Context, *http.Client, string) ([]byte, error) {
+func developFixture(t *testing.T, release, sums string) *http.Client {
 	t.Helper()
-	previous := fetchMetadata
-	fetchMetadata = func(_ context.Context, _ *http.Client, raw string) ([]byte, error) {
+	return &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
+		var body string
 		switch {
-		case strings.HasSuffix(raw, "/releases/tags/develop"):
-			return []byte(release), nil
-		case strings.HasSuffix(raw, "/SHA256SUMS"):
-			return []byte(sums), nil
+		case strings.HasSuffix(r.URL.Path, "/releases/tags/develop"):
+			body = release
+		case strings.HasSuffix(r.URL.Path, "/SHA256SUMS"):
+			body = sums
 		default:
-			t.Fatalf("unexpected metadata fetch %s", raw)
+			t.Fatalf("unexpected metadata fetch %s", r.URL)
 			return nil, errors.New("unexpected")
 		}
-	}
-	t.Cleanup(func() { fetchMetadata = previous })
-	return fetchMetadata
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: http.Header{}}, nil
+	})}
 }
 
 func TestResolveDevelopSource(t *testing.T) {
@@ -34,8 +33,7 @@ func TestResolveDevelopSource(t *testing.T) {
 		{"name":"` + archive + `","browser_download_url":"https://github.com/Furyfree/nimbus/releases/download/develop/` + archive + `"},
 		{"name":"SHA256SUMS","browser_download_url":"https://github.com/Furyfree/nimbus/releases/download/develop/SHA256SUMS"}]}`
 	sums := developDigest + "  " + archive + "\n"
-	developFixture(t, release, sums)
-	source, err := resolveDevelopSource(t.Context(), &http.Client{}, developReleaseURL)
+	source, err := resolveDevelopSource(t.Context(), developFixture(t, release, sums), developReleaseURL)
 	if err != nil || source.Version != "0.6.1~dev.20260919020436" ||
 		source.Asset != archive || source.Digest != developDigest {
 		t.Fatalf("source = %+v, %v", source, err)
@@ -59,12 +57,63 @@ func TestResolveDevelopSourceRefusals(t *testing.T) {
 		{"short digest", base, "abc  " + archive + "\n", "no digest"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			developFixture(t, tc.release, tc.sums)
-			_, err := resolveDevelopSource(t.Context(), &http.Client{}, developReleaseURL)
+			_, err := resolveDevelopSource(t.Context(), developFixture(t, tc.release, tc.sums), developReleaseURL)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("err = %v, want %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestMetadataRedirects(t *testing.T) {
+	for _, tc := range []struct {
+		name, target string
+		allowed      bool
+	}{
+		{"release asset", "https://release-assets.githubusercontent.com/fixture/SHA256SUMS", true},
+		{"foreign host", "https://example.invalid/SHA256SUMS", false},
+		{"HTTP downgrade", "http://release-assets.githubusercontent.com/fixture/SHA256SUMS", false},
+		{"credentials", "https://user:password@github.com/Furyfree/nimbus/releases/download/develop/SHA256SUMS", false},
+		{"other repository", "https://github.com/other/project/releases/download/develop/SHA256SUMS", false},
+		{"unexpected port", "https://github.com:8443/Furyfree/nimbus/releases/download/develop/SHA256SUMS", false},
+		{"redirect loop", developReleaseURL, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
+				if r.URL.String() == developReleaseURL {
+					return &http.Response{StatusCode: http.StatusFound, Header: http.Header{"Location": {tc.target}}, Body: io.NopCloser(strings.NewReader(""))}, nil
+				}
+				if !tc.allowed {
+					t.Fatal("request reached a rejected redirect target")
+				}
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader("checksum")), Header: http.Header{}}, nil
+			})}
+			body, err := httpGet(t.Context(), client, developReleaseURL)
+			if tc.allowed {
+				if err != nil || string(body) != "checksum" {
+					t.Fatalf("permitted redirect failed: %q %v", body, err)
+				}
+			} else if err == nil {
+				t.Fatal("unsafe redirect accepted")
+			}
+		})
+	}
+}
+
+func TestMetadataSizeLimit(t *testing.T) {
+	for _, size := range []int{1 << 20, (1 << 20) + 1} {
+		payload := strings.Repeat("x", size)
+		client := &http.Client{Transport: roundTrip(func(*http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(payload)), Header: http.Header{}}, nil
+		})}
+		body, err := httpGet(t.Context(), client, developReleaseURL)
+		if size == 1<<20 {
+			if err != nil || string(body) != payload {
+				t.Fatalf("bounded response changed: %v", err)
+			}
+		} else if err == nil {
+			t.Fatal("oversized response silently truncated")
+		}
 	}
 }
 

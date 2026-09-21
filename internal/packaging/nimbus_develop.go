@@ -25,9 +25,6 @@ var (
 	developArchive = regexp.MustCompile(`^nimbus-(.+)-vendor\.tar\.gz$`)
 )
 
-// fetchMetadata is the metadata fetch used by the resolver; tests replace it.
-var fetchMetadata = httpGet
-
 // developSource is the resolved rolling asset for the develop channel.
 // GitHub replaces the tilde in asset names with a dot, so Asset keeps the
 // published spelling while Version uses RPM's tilde form.
@@ -47,7 +44,7 @@ func resolveDevelopSource(ctx context.Context, client *http.Client, releaseURL s
 	var release struct {
 		Assets []asset `json:"assets"`
 	}
-	body, err := fetchMetadata(ctx, client, releaseURL)
+	body, err := httpGet(ctx, client, releaseURL)
 	if err != nil {
 		return developSource{}, err
 	}
@@ -80,7 +77,7 @@ func resolveDevelopSource(ctx context.Context, client *http.Client, releaseURL s
 	if !developVersion.MatchString(version) {
 		return developSource{}, fmt.Errorf("unexpected develop version %q", version)
 	}
-	sums, err := fetchMetadata(ctx, client, checksums)
+	sums, err := httpGet(ctx, client, checksums)
 	if err != nil {
 		return developSource{}, err
 	}
@@ -154,11 +151,12 @@ func (b *Builder) prepareNimbusDevelop(ctx context.Context, out string) (string,
 	return b.SRPM(ctx, temporary, out)
 }
 
-// officialURL restricts metadata fetches to GitHub over HTTPS; tests replace it.
-var officialURL = func(raw string) bool {
+func officialURL(raw string) bool {
 	u, err := url.Parse(raw)
-	return err == nil && u.Scheme == "https" &&
-		(u.Hostname() == "github.com" || u.Hostname() == "api.github.com") && u.User == nil
+	return err == nil && u.Scheme == "https" && u.User == nil &&
+		(u.Host == "api.github.com" && u.Path == "/repos/Furyfree/nimbus/releases/tags/develop" ||
+			u.Host == "github.com" && strings.HasPrefix(u.Path, "/Furyfree/nimbus/releases/download/develop/") ||
+			u.Host == "release-assets.githubusercontent.com")
 }
 
 // httpGet fetches one small metadata document from an official URL.
@@ -172,7 +170,17 @@ func httpGet(ctx context.Context, client *http.Client, raw string) ([]byte, erro
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "Furyfree-copr")
-	response, err := client.Do(req)
+	checked := *client
+	checked.CheckRedirect = func(r *http.Request, via []*http.Request) error {
+		if len(via) >= 10 || !officialURL(r.URL.String()) {
+			return errors.New("metadata redirected outside official GitHub source")
+		}
+		if client.CheckRedirect != nil {
+			return client.CheckRedirect(r, via)
+		}
+		return nil
+	}
+	response, err := checked.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch %s: %w", raw, err)
 	}
@@ -180,9 +188,12 @@ func httpGet(ctx context.Context, client *http.Client, raw string) ([]byte, erro
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch %s: unexpected status %s", raw, response.Status)
 	}
-	body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	body, err := io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", raw, err)
+	}
+	if len(body) > 1<<20 {
+		return nil, errors.New("release metadata exceeds 1 MiB")
 	}
 	return body, nil
 }

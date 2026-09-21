@@ -16,6 +16,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/Furyfree/copr/internal/pins"
 )
 
 const Version = "0.1.0"
@@ -26,15 +28,7 @@ const archiveName = "jetbrains-toolbox.tar.gz"
 var buildPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){3}$`)
 var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 
-type Artifact struct {
-	SchemaVersion int    `json:"schema_version"`
-	Version       string `json:"version"`
-	Name          string `json:"name"`
-	Arch          string `json:"arch"`
-	SHA256        string `json:"sha256"`
-	Path          string `json:"path"`
-	Source        string `json:"source"`
-}
+type Artifact pins.Artifact
 
 func sourceURL(build string) string {
 	return "https://download.jetbrains.com/toolbox/jetbrains-toolbox-" + build + ".tar.gz"
