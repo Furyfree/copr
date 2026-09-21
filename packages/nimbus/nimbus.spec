@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 93dcbb8bad8cd56f8ac1644621efab41ccd6976b0c2ad0b8021cdf1b2fcf2845
+%global source_sha256 43d32b5771c635456424b3354c06618324d70fe2e1fa3db15449892c00957ce5
 
 Name:           nimbus
-Version:        0.6.3
+Version:        0.6.4
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -82,6 +82,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Mon Sep 21 2026 Nimbus maintainers - 0.6.4-0.1
+- Accept Fedora timeout policy during Zeron and agent-proxy removal.
+- Check service ownership before approval and deselect the Copilot app.
+
 * Mon Sep 21 2026 Nimbus maintainers - 0.6.3-0.1
 - Add agent-proxy removal while retaining Copilot, config and Mise Herdr.
 - Make the Zeron daemon opt-in and add the laptop-only Wi-Fi retry.
