@@ -40,6 +40,7 @@ check-package package: _check-style
     esac
     go vet "${targets[@]}"
     COPR_TEST_PACKAGE="$package" go test -tags=integration "${targets[@]}" -count=1
+    echo "next: commit and push, then just publish $package"
 
 [private]
 _check-style:

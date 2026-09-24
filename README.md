@@ -35,12 +35,16 @@ Run `just --list` for all commands.
 ```sh
 just check-pins
 just refresh-pins
+just check-package PACKAGE
+git commit -m 'chore(PACKAGE): pin VERSION' internal/pins/pins.json && git push
+just publish PACKAGE
 ```
 
-Both commands need network access. `check-pins` reports outdated releases;
-`refresh-pins` updates [internal/pins/pins.json](internal/pins/pins.json).
-Review, commit and push that file before publishing the affected helpers.
-The weekly Installer pins workflow also checks for outdated releases.
+`check-pins` and `refresh-pins` need network access. `check-pins` reports
+outdated releases; `refresh-pins` updates
+[internal/pins/pins.json](internal/pins/pins.json) and names the helpers to
+check and publish. Each command prints the next one. The weekly Installer pins
+workflow also checks for outdated releases.
 
 ## Publishing
 

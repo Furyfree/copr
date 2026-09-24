@@ -96,7 +96,42 @@ func (b *Builder) RefreshPins(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(b.Root, "internal", "pins", "pins.json"), data, 0o644)
+	path := filepath.Join(b.Root, "internal", "pins", "pins.json")
+	old, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	before, err := pins.Decode(old)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return err
+	}
+	var changed []string
+	for _, p := range []struct {
+		name     string
+		old, new pins.Artifact
+	}{
+		{pins.Copilot, before.Copilot, file.Copilot},
+		{pins.Toolbox, before.Toolbox, file.Toolbox},
+		{pins.Wowup, before.Wowup, file.Wowup},
+	} {
+		if p.old == p.new {
+			fmt.Printf("%-32s %s unchanged\n", p.name, p.new.Version)
+			continue
+		}
+		changed = append(changed, p.name)
+		fmt.Printf("%-32s %s -> %s\n", p.name, p.old.Version, p.new.Version)
+	}
+	if len(changed) == 0 {
+		fmt.Println("all pins current")
+		return nil
+	}
+	for _, name := range changed {
+		fmt.Printf("next: just check-package %s\n", name)
+	}
+	return nil
 }
 
 // Pins resolves every pin. It reads release metadata only; it never downloads

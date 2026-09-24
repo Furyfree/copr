@@ -133,7 +133,7 @@ func run(ctx context.Context, args []string) error {
 			fmt.Printf("%-32s pinned %-16s latest %-16s %s\n", pin.Package, pin.PinnedVersion, pin.LatestVersion, pin.Status())
 		}
 		if stale {
-			return fmt.Errorf("installer pins are stale; run just refresh-pins, then publish")
+			return fmt.Errorf("installer pins are stale; next: just refresh-pins")
 		}
 		return nil
 	case "refresh-pins":
