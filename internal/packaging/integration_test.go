@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
@@ -44,7 +45,7 @@ func selected(t *testing.T, name string) {
 }
 
 func TestNativeHelperRPMs(t *testing.T) {
-	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer"} {
+	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer"} {
 		t.Run(name, func(t *testing.T) {
 			selected(t, name)
 			root := t.TempDir()
@@ -54,6 +55,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			if name == "wowup-cf-installer" {
 				b.WowupRelease = &wowup.Artifact{SchemaVersion: 1, Version: "2.23.2", Name: "wowup-cf", Arch: "x86_64", SHA256: strings.Repeat("c", 64), Source: "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.2/WowUp-CF-2.23.2.AppImage"}
+			}
+			if name == "obsidian-installer" {
+				b.ObsidianRelease = &obsidian.Artifact{SchemaVersion: 1, Version: "1.13.2", Name: "obsidian", Arch: "x86_64", SHA256: strings.Repeat("c", 64), Source: "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.2/Obsidian-1.13.2.AppImage"}
 			}
 			if name == "jetbrains-toolbox-installer" {
 				b.ToolboxRelease = &toolbox.Artifact{SchemaVersion: 1, Version: "3.8.1.90000", Name: "jetbrains-toolbox", Arch: "x86_64", SHA256: strings.Repeat("d", 64), Source: "https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.8.1.90000.tar.gz"}
@@ -160,6 +164,17 @@ func TestNativeHelperRPMs(t *testing.T) {
 				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
 				if !bytes.Contains(rpmRelease, []byte("app2.23.2")) {
 					t.Fatalf("WoWUp version absent from RPM release: %s", rpmRelease)
+				}
+			}
+			if name == "obsidian-installer" {
+				release := native(t, "", filepath.Join(extracted, "usr/bin", name), "release", "--json")
+				a, err := obsidian.ParseRelease(release)
+				if err != nil || a != *b.ObsidianRelease {
+					t.Fatalf("prepared Obsidian release was not bundled: %s %v", release, err)
+				}
+				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
+				if !bytes.Contains(rpmRelease, []byte("app1.13.2")) {
+					t.Fatalf("Obsidian version absent from RPM release: %s", rpmRelease)
 				}
 			}
 			if name == "jetbrains-toolbox-installer" {
@@ -448,6 +463,7 @@ func TestNativeCheckPackageScope(t *testing.T) {
 		{"voxtype", "./cmd/coprctl ./internal/packaging"},
 		{"github-copilot-installer", "./cmd/coprctl ./internal/packaging ./cmd/github-copilot-installer ./internal/copilot"},
 		{"wowup-cf-installer", "./cmd/coprctl ./internal/packaging ./cmd/wowup-cf-installer ./internal/wowup"},
+		{"obsidian-installer", "./cmd/coprctl ./internal/packaging ./cmd/obsidian-installer ./internal/obsidian"},
 		{"jetbrains-toolbox-installer", "./cmd/coprctl ./internal/packaging ./cmd/jetbrains-toolbox-installer ./internal/toolbox"},
 		{"", "./..."},
 	} {

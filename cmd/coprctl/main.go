@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/packaging"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
@@ -48,6 +49,13 @@ func run(ctx context.Context, args []string) error {
 				}
 				b.WowupRelease = &a
 				fmt.Fprintf(os.Stderr, "Selected WoWUp-CF %s, SHA-256 %s\n", a.Version, a.SHA256)
+			case "obsidian-installer":
+				a, err := obsidian.LatestRelease(ctx)
+				if err != nil {
+					return err
+				}
+				b.ObsidianRelease = &a
+				fmt.Fprintf(os.Stderr, "Selected Obsidian %s, SHA-256 %s\n", a.Version, a.SHA256)
 			case "jetbrains-toolbox-installer":
 				a, err := toolbox.LatestRelease(ctx)
 				if err != nil {

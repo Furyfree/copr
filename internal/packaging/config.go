@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 	"github.com/pelletier/go-toml/v2"
@@ -73,12 +74,13 @@ func CleanEnvironment() []string {
 }
 
 type Builder struct {
-	Root           string
-	Run            Runner
-	Client         *http.Client
-	CopilotRelease *copilot.Artifact
-	WowupRelease   *wowup.Artifact
-	ToolboxRelease *toolbox.Artifact
+	Root            string
+	Run             Runner
+	Client          *http.Client
+	CopilotRelease  *copilot.Artifact
+	WowupRelease    *wowup.Artifact
+	ObsidianRelease *obsidian.Artifact
+	ToolboxRelease  *toolbox.Artifact
 }
 
 func New(root string) *Builder {
@@ -110,7 +112,7 @@ func (b *Builder) Prepare(ctx context.Context, name, out string) (string, error)
 		return b.prepareNimbusDevelop(ctx, out)
 	case "voxtype":
 		return b.prepareVoxtype(ctx, out)
-	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer":
+	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer":
 		return b.prepareHelper(ctx, name, out)
 	default:
 		return b.SRPM(ctx, filepath.Join(b.Root, "packages", name, name+".spec"), out)

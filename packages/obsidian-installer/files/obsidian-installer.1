@@ -1,0 +1,69 @@
+.TH OBSIDIAN-INSTALLER 1 "September 2026" "obsidian-installer 0.1.0"
+.SH NAME
+obsidian-installer \- verified official Obsidian application delivery
+.SH SYNOPSIS
+.B obsidian-installer install --assumeyes
+.br
+.B obsidian-installer update --assumeyes
+.br
+.B obsidian-installer release --json
+.br
+.B obsidian-installer prepare --directory DIR
+.RB [ --app-version " VERSION"]
+.br
+.B obsidian-installer apply --appimage FILE --sha256 HEX --app-version VERSION --assumeyes
+.br
+.B obsidian-installer status --json
+.br
+.B obsidian-installer uninstall --assumeyes
+.SH DESCRIPTION
+Installing or upgrading the helper RPM queues a one-shot systemd job after
+DNF finishes. It downloads the package-selected official AppImage, verifies
+its SHA-256 and identity, extracts it and creates desktop integration.
+COPR contains only the helper. Check systemctl status obsidian-installer.service
+and journalctl -u obsidian-installer.service for completion or failure.
+The job retries failed operations, up to three starts in 15 minutes.
+Reinstalling the RPM queues another attempt.
+.PP
+New helper releases update the AppImage and its bundled Electron runtime.
+Obsidian's own application updates remain available. The helper does not
+modify user settings, vaults or existing Flatpak installations.
+.SH COMMANDS
+.TP
+.B install, update
+Require root and --assumeyes. Reconcile the package-selected release.
+Reject changed or foreign files, metadata drift and downgrades. Repair
+missing known desktop links from the retained verified artifact offline.
+.TP
+.B prepare
+Download a stable official release into the requested existing directory
+without installing it. With no version, use the official desktop release feed.
+Print the artifact path, version, source and SHA-256 as JSON.
+.TP
+.B apply
+Require root and explicit --appimage, --sha256, --app-version and --assumeyes.
+Verify the artifact and ownership before replacing the application bundle.
+.TP
+.B release, status
+Read-only JSON output. Release prints the packaged selection without network
+access. Status verifies existing installation and ownership, including any
+interrupted removal. Unknown state is an error.
+.TP
+.B uninstall
+Require root and --assumeyes. Remove only verified owned application files
+and desktop integration. Preserve vaults and all user configuration.
+Interrupted removal can be retried; changed or foreign files block removal.
+Final RPM removal invokes this command automatically.
+.SH FILES
+.TP
+.B /opt/obsidian/
+AppImage, extracted application, launcher, desktop entry and receipt.
+.TP
+.B /usr/local/bin/obsidian
+Application launch command.
+.TP
+.B /usr/local/share/applications/obsidian.desktop
+Desktop integration, including obsidian:// links.
+.SH EXIT STATUS
+Zero indicates success. Nonzero indicates an invalid request, failed
+verification, unsupported platform or incomplete operation.

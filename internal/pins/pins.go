@@ -15,9 +15,10 @@ import (
 var packed []byte
 
 const (
-	Copilot = "github-copilot-installer"
-	Toolbox = "jetbrains-toolbox-installer"
-	Wowup   = "wowup-cf-installer"
+	Copilot  = "github-copilot-installer"
+	Toolbox  = "jetbrains-toolbox-installer"
+	Wowup    = "wowup-cf-installer"
+	Obsidian = "obsidian-installer"
 )
 
 // Artifact is one helper's packaged application release.
@@ -33,9 +34,10 @@ type Artifact struct {
 
 // File is the complete installer pin set.
 type File struct {
-	Copilot Artifact `json:"github-copilot-installer"`
-	Toolbox Artifact `json:"jetbrains-toolbox-installer"`
-	Wowup   Artifact `json:"wowup-cf-installer"`
+	Copilot  Artifact `json:"github-copilot-installer"`
+	Toolbox  Artifact `json:"jetbrains-toolbox-installer"`
+	Wowup    Artifact `json:"wowup-cf-installer"`
+	Obsidian Artifact `json:"obsidian-installer"`
 }
 
 func Decode(data []byte) (File, error) {
@@ -48,7 +50,7 @@ func Decode(data []byte) (File, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return f, errors.New("expected one pins object")
 	}
-	if f.Copilot.Version == "" || f.Toolbox.Version == "" || f.Wowup.Version == "" {
+	if f.Copilot.Version == "" || f.Toolbox.Version == "" || f.Wowup.Version == "" || f.Obsidian.Version == "" {
 		return f, errors.New("pins file must name every installer helper")
 	}
 	return f, nil
@@ -99,6 +101,8 @@ func Replace(data []byte, name string, artifact []byte) ([]byte, error) {
 		f.Toolbox = a
 	case Wowup:
 		f.Wowup = a
+	case Obsidian:
+		f.Obsidian = a
 	default:
 		return nil, fmt.Errorf("unknown installer helper %q", name)
 	}
@@ -113,6 +117,8 @@ func (f File) artifact(name string) (Artifact, error) {
 		return f.Toolbox, nil
 	case Wowup:
 		return f.Wowup, nil
+	case Obsidian:
+		return f.Obsidian, nil
 	default:
 		return Artifact{}, fmt.Errorf("unknown installer helper %q", name)
 	}

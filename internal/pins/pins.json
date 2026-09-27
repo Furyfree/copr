@@ -25,5 +25,14 @@
     "sha256": "8d74c8fd24af4904dfd47b608ea6f4c55d578fd9dd70ad176b81f7edf139c7d9",
     "path": "",
     "source": "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.1/WowUp-CF-2.23.1.AppImage"
+  },
+  "obsidian-installer": {
+    "schema_version": 1,
+    "version": "1.13.7",
+    "name": "obsidian",
+    "arch": "x86_64",
+    "sha256": "e0d8e0a611624de8c9c7dcd8a9e648279fb0a0d552faa1312b7e4f3a5fa72663",
+    "path": "",
+    "source": "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.7/Obsidian-1.13.7.AppImage"
   }
 }

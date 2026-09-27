@@ -36,6 +36,7 @@ check-package package: _check-style
     case "$package" in
         github-copilot-installer) targets+=(./cmd/github-copilot-installer ./internal/copilot) ;;
         wowup-cf-installer) targets+=(./cmd/wowup-cf-installer ./internal/wowup) ;;
+        obsidian-installer) targets+=(./cmd/obsidian-installer ./internal/obsidian) ;;
         jetbrains-toolbox-installer) targets+=(./cmd/jetbrains-toolbox-installer ./internal/toolbox) ;;
     esac
     go vet "${targets[@]}"
@@ -60,5 +61,5 @@ project package: (_dispatch "project" package)
 
 [private]
 _dispatch operation package:
-    @case {{ quote(package) }} in blesh|nimbus|nimbus-develop|voxtype|librepods|woeusb|github-copilot-installer|wowup-cf-installer|jetbrains-toolbox-installer) ;; *) echo 'Choose blesh, nimbus, nimbus-develop, voxtype, librepods, woeusb, github-copilot-installer, wowup-cf-installer, or jetbrains-toolbox-installer' >&2; exit 2 ;; esac
+    @case {{ quote(package) }} in blesh|nimbus|nimbus-develop|voxtype|librepods|woeusb|github-copilot-installer|wowup-cf-installer|jetbrains-toolbox-installer|obsidian-installer) ;; *) echo 'Choose blesh, nimbus, nimbus-develop, voxtype, librepods, woeusb, github-copilot-installer, wowup-cf-installer, jetbrains-toolbox-installer, or obsidian-installer' >&2; exit 2 ;; esac
     gh workflow run copr.yml --repo Furyfree/copr --ref main -f {{ quote("operation=" + operation) }} -f {{ quote("package=" + package) }}

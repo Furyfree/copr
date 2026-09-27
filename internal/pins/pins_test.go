@@ -24,7 +24,7 @@ func TestPackagedFileRoundTrip(t *testing.T) {
 	if err != nil || decoded != f {
 		t.Fatalf("pin values changed during encoding: %+v %v", decoded, err)
 	}
-	for _, name := range []string{Copilot, Toolbox, Wowup} {
+	for _, name := range []string{Copilot, Toolbox, Wowup, Obsidian} {
 		data, err := Lookup(name)
 		if err != nil {
 			t.Fatal(err)

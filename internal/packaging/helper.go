@@ -9,13 +9,14 @@ import (
 	"regexp"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/pins"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
 )
 
 // Each installer helper command builds on one self-contained implementation package.
-var helperImplementations = map[string]string{"github-copilot-installer": "copilot", "wowup-cf-installer": "wowup", "jetbrains-toolbox-installer": "toolbox"}
+var helperImplementations = map[string]string{"github-copilot-installer": "copilot", "wowup-cf-installer": "wowup", "obsidian-installer": "obsidian", "jetbrains-toolbox-installer": "toolbox"}
 
 func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, error) {
 	packageDir := filepath.Join(b.Root, "packages", name)
@@ -75,6 +76,10 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 		if b.WowupRelease != nil {
 			override, err = json.Marshal(b.WowupRelease)
 		}
+	case pins.Obsidian:
+		if b.ObsidianRelease != nil {
+			override, err = json.Marshal(b.ObsidianRelease)
+		}
 	case pins.Toolbox:
 		if b.ToolboxRelease != nil {
 			override, err = json.Marshal(b.ToolboxRelease)
@@ -103,6 +108,12 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 		appVersion = a.Version
 	case pins.Wowup:
 		a, err := wowup.ParseRelease(raw)
+		if err != nil {
+			return "", err
+		}
+		appVersion = a.Version
+	case pins.Obsidian:
+		a, err := obsidian.ParseRelease(raw)
 		if err != nil {
 			return "", err
 		}

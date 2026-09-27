@@ -11,6 +11,7 @@ Fedora 44 x86_64 RPM recipes and installer helpers.
 | [librepods](packages/librepods/README.md) | AirPods controls with Noctalia integration |
 | [woeusb](packages/woeusb/README.md) | Create Windows installation USB media |
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Install the official GitHub Copilot application |
+| [obsidian-installer](packages/obsidian-installer/README.md) | Install the official Obsidian application |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install WoWUp with CurseForge |
 | [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install JetBrains Toolbox |
 

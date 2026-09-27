@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Furyfree/copr/internal/copilot"
+	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/pins"
 	"github.com/Furyfree/copr/internal/toolbox"
 	"github.com/Furyfree/copr/internal/wowup"
@@ -66,6 +67,14 @@ func HelperPinResolvers() []PinResolver {
 			},
 		},
 		{
+			Package: "obsidian-installer",
+			Pinned:  func() (string, string, error) { a, err := obsidian.PackagedRelease(); return a.Version, a.SHA256, err },
+			Latest: func(ctx context.Context) (string, string, error) {
+				a, err := obsidian.LatestRelease(ctx)
+				return a.Version, a.SHA256, err
+			},
+		},
+		{
 			Package: "jetbrains-toolbox-installer",
 			Pinned:  func() (string, string, error) { a, err := toolbox.PackagedRelease(); return a.Version, a.SHA256, err },
 			Latest: func(ctx context.Context) (string, string, error) {
@@ -91,7 +100,11 @@ func (b *Builder) RefreshPins(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", pins.Wowup, err)
 	}
-	file := pins.File{Copilot: pins.Artifact(copilotRelease), Toolbox: pins.Artifact(toolboxRelease), Wowup: pins.Artifact(wowupRelease)}
+	obsidianRelease, err := obsidian.LatestRelease(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", pins.Obsidian, err)
+	}
+	file := pins.File{Copilot: pins.Artifact(copilotRelease), Toolbox: pins.Artifact(toolboxRelease), Wowup: pins.Artifact(wowupRelease), Obsidian: pins.Artifact(obsidianRelease)}
 	data, err := pins.Encode(file)
 	if err != nil {
 		return err
@@ -116,6 +129,7 @@ func (b *Builder) RefreshPins(ctx context.Context) error {
 		{pins.Copilot, before.Copilot, file.Copilot},
 		{pins.Toolbox, before.Toolbox, file.Toolbox},
 		{pins.Wowup, before.Wowup, file.Wowup},
+		{pins.Obsidian, before.Obsidian, file.Obsidian},
 	} {
 		if p.old == p.new {
 			fmt.Printf("%-32s %s unchanged\n", p.name, p.new.Version)
