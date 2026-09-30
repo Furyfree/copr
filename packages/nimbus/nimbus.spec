@@ -1,10 +1,10 @@
 # Source0 contains the reviewed release source and its vendored modules,
 # rooted at nimbus-%{version}/.
 %global debug_package %{nil}
-%global source_sha256 b0ac45e36a30d7ed533562721d194076a2b02d5c3938622c167d1597abdbfb52
+%global source_sha256 8be92a1e96e7c45ac14498f1994663aabe8f9aab986f5c4aff3b3b73849c7fc9
 
 Name:           nimbus
-Version:        0.6.6
+Version:        0.6.7
 Release:        0.1%{?dist}
 Summary:        Personal Fedora workstation installer and system manager
 # LicenseRef-GEANT-CAT: the GÉANT Standard Open Source Software Outward
@@ -82,6 +82,10 @@ cp %{_licensedir}/golang/LICENSE bundled-licenses/Go-LICENSE
 /usr/share/plymouth/themes/nimbus
 
 %changelog
+* Wed Sep 30 2026 Nimbus maintainers - 0.6.7-0.1
+- Accept packages DNF skips during upgrades and name them in the preview.
+- Let local packages block only repositories that offer them.
+
 * Tue Sep 22 2026 Nimbus maintainers - 0.6.6-0.1
 - Fix service installation ordering and defer uncertain repository cleanup.
 - Add channel switching, Nix daemon setup and live setup status improvements.
