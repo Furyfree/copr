@@ -1,52 +1,52 @@
-.TH GITHUB-COPILOT-INSTALLER 1 "September 2026" "github-copilot-installer 0.3.0" "User Commands"
+.TH GITHUB-COPILOT-INSTALLER 1 "September 2026" "github-copilot-installer 0.4.0" "User Commands"
 .SH NAME
-github-copilot-installer \- install GitHub's official GitHub Copilot RPM on Fedora
+github-copilot-installer \- verified official GitHub Copilot application delivery
 .SH SYNOPSIS
 .B github-copilot-installer
 .I command
 .RI [ options ]
 .SH DESCRIPTION
-.B github-copilot-installer
-retrieves release metadata from GitHub, downloads the official GitHub Copilot
-RPM, verifies its published SHA-256 digest and package identity, and delegates
-installation or updates to DNF.
+Installing or upgrading the helper RPM queues a one-shot systemd job after
+DNF finishes. It downloads the package-selected official GitHub Copilot
+AppImage, verifies its SHA-256 and identity, extracts it and creates desktop
+integration. The proprietary application is not contained in the helper or
+its COPR repository. Check systemctl status github-copilot-installer.service
+for completion or failure. The job retries failed operations, up to three
+starts in 15 minutes. Reinstalling the RPM queues another attempt.
 .PP
-The GitHub Copilot application is proprietary and is not contained in the
-installer package or its COPR repository.
+Removing the helper RPM removes the verified application and desktop
+integration. User data in ~/.copilot is preserved.
 .PP
-Installing or upgrading the helper RPM queues a one-shot systemd job to install
-the package's selected app release after DNF releases its transaction lock.
-The app download is verified against the SHA-256 embedded in the helper.
-DNF may finish before the app job. Inspect github-copilot-installer.service
-with systemctl status; failed jobs retry after a minute, with at most three
-starts in fifteen minutes. Use dnf reinstall github-copilot-installer to retry
-after a failed job or an installation without running systemd.
+Helper versions before 0.4.0 installed GitHub's RPM instead. While that
+package is installed, install and apply refuse to run; remove it with
+dnf remove github.
 .SH COMMANDS
 .TP
 .B install
-Install the GitHub Copilot release pinned in this helper package.
+Require root. Reconcile the release pinned in this helper package. Reject
+changed or foreign files, metadata drift and downgrades. Repair missing known
+desktop links from the retained verified artifact without network access.
 .TP
 .B update
-Update an existing recognized GitHub Copilot installation.
+Like install, for an existing verified installation.
 .TP
 .B prepare
-Download and verify a stable release without root or package mutation.
+Download and verify a stable release without root or installation.
 Print schema-version-1 JSON with version, name, arch, sha256, path and source.
 Retain the artifact in a private directory for the caller to inspect and remove.
 .TP
 .B apply
-Install a prepared RPM without network access. Requires root, the exact expected
-SHA-256 and version. Copies into private privileged staging, then rechecks
-identity and digests before invoking DNF. Refuses downgrades. Requires the
-installed RPM SHA-256 header to match the artifact after DNF; a different
-same-version installed header is refused before DNF can silently skip it.
+Require root. Install a prepared AppImage without network access. Requires
+the exact expected SHA-256 and version. Refuses downgrades.
 .TP
 .B status
 Show the helper, selected application version and SHA-256, and installed
-application version, without network access or temporary files.
+application version, without network access. Unknown state is an error.
 .TP
 .B uninstall
-Remove the upstream application package while retaining user data.
+Require root. Remove only verified owned application files and desktop
+integration. Interrupted removal can be retried; changed or foreign files
+block removal. Final RPM removal invokes this command automatically.
 .TP
 .B version
 Print the helper version.
@@ -58,20 +58,29 @@ Print command usage.
 .BI \-\-app\-version " VERSION"
 Select an explicit GitHub Copilot release instead of the packaged release.
 Selects the release for install, update and prepare; required with apply.
-Without this option, prepare still resolves GitHub's latest stable release.
+Without this option, prepare resolves GitHub's latest stable release.
 .TP
 .BR \-\-assumeyes ", " \-y
-Pass automatic yes confirmation to DNF. Valid only for mutating commands.
+Accepted for mutating commands; approval happens before the command runs.
 .TP
 .BI \-\-directory " DIR"
 Existing destination directory for prepare. It creates a private child directory.
 .TP
-.BI \-\-rpm " FILE"
-Regular prepared RPM file for apply. Symlinks are refused.
+.BI \-\-appimage " FILE"
+Regular prepared AppImage for apply. Symlinks are refused.
 .TP
 .BI \-\-sha256 " HEX"
 Expected lowercase SHA-256 digest for apply.
 .SH FILES
+.TP
+.B /opt/github-copilot/
+AppImage, extracted application, launcher, desktop entry and receipt.
+.TP
+.B /usr/local/bin/github
+Application launch command.
+.TP
+.B /usr/local/share/applications/github-copilot.desktop
+Desktop integration, including GitHub Copilot sign-in links.
 .TP
 .I ~/.copilot
 Upstream application data. This helper never removes or modifies it.
@@ -79,18 +88,13 @@ Upstream application data. This helper never removes or modifies it.
 .nf
 sudo github-copilot-installer install
 github-copilot-installer status
-sudo github-copilot-installer update --assumeyes
+sudo github-copilot-installer update
 sudo github-copilot-installer uninstall
 .fi
 .SH SECURITY
-The upstream RPM is unsigned. Installation therefore requires the SHA-256
-digest published by the official GitHub release API and an exact official
-release URL. Redirects are restricted to HTTPS on the official GitHub API,
-repository release path and GitHub release asset host. Only published stable
-releases and epoch-zero recognized Copilot packages are accepted.
-.PP
-The install transaction disables local-package signature checking for the single
-verified Copilot RPM. Repository signature checking and persistent DNF settings
-are unchanged. This is a Copilot-specific unsigned-artifact exception, not
-publisher-signature verification. Preparation JSON is information for the caller,
-not authorization to install; the caller must obtain approval before apply.
+The upstream AppImage is unsigned. Installation therefore requires the SHA-256
+digest pinned in this package or published by the official GitHub release API,
+and an exact official release URL. Redirects are restricted to HTTPS on the
+official GitHub API, repository release path and GitHub release asset host.
+Only published stable releases are accepted. Preparation JSON is information
+for the caller, not authorization to install.

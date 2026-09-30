@@ -1,0 +1,250 @@
+// Package copilot delivers the official GitHub Copilot AppImage with explicit ownership.
+package copilot
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/Furyfree/copr/internal/pins"
+)
+
+const Version = "0.4.0"
+const assetName = "GitHub-Copilot-linux-x64.AppImage"
+const maxArtifact = 1024 * 1024 * 1024
+
+var stableVersion = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+var digestPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
+
+type Artifact pins.Artifact
+
+func sourceURL(version string) string {
+	return "https://github.com/github/app/releases/download/v" + version + "/" + assetName
+}
+func officialURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.User != nil {
+		return false
+	}
+	return u.Host == "api.github.com" && strings.HasPrefix(u.Path, "/repos/github/app/releases/") || u.Host == "github.com" && strings.HasPrefix(u.Path, "/github/app/releases/download/") || u.Host == "release-assets.githubusercontent.com"
+}
+func httpClient() *http.Client {
+	return &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(r *http.Request, via []*http.Request) error {
+		if len(via) >= 10 || !officialURL(r.URL.String()) {
+			return errors.New("download redirected outside official GitHub source")
+		}
+		return nil
+	}}
+}
+func (e *Installer) fetch(ctx context.Context, raw string, destination string, size int64) ([]byte, error) {
+	if !officialURL(raw) {
+		return nil, errors.New("download is outside official GitHub source")
+	}
+	req, err := http.NewRequestWithContext(ctx, "GET", raw, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "github-copilot-installer")
+	resp, err := e.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GitHub returned HTTP %d", resp.StatusCode)
+	}
+	if destination == "" {
+		data, err := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024+1))
+		if len(data) > 2*1024*1024 {
+			return nil, errors.New("release metadata is too large")
+		}
+		return data, err
+	}
+	if size < 64 || size > maxArtifact {
+		return nil, errors.New("invalid AppImage download size")
+	}
+	f, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	n, copyErr := io.Copy(f, io.LimitReader(resp.Body, size))
+	closeErr := f.Close()
+	if err := errors.Join(copyErr, closeErr); err != nil {
+		return nil, err
+	}
+	if n != size {
+		return nil, errors.New("AppImage is shorter than release size")
+	}
+	var extra [1]byte
+	nExtra, readErr := io.ReadFull(resp.Body, extra[:])
+	if nExtra != 0 {
+		return nil, errors.New("AppImage exceeds release size")
+	}
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return nil, readErr
+	}
+	return nil, nil
+}
+func fileHash(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+func regular(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("AppImage must be a regular file, not a symlink")
+	}
+	return nil
+}
+func checkArtifact(path, digest string) error {
+	if err := regular(path); err != nil {
+		return err
+	}
+	actual, err := fileHash(path)
+	if err != nil {
+		return err
+	}
+	if !digestPattern.MatchString(digest) || actual != digest {
+		return errors.New("AppImage does not match approved SHA-256")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	var header [64]byte
+	if _, err := io.ReadFull(f, header[:]); err != nil {
+		return err
+	}
+	if string(header[:11]) != "\x7fELF\x02\x01\x01\x00AI\x02" || binary.LittleEndian.Uint16(header[18:]) != 62 {
+		return errors.New("artifact is not an x86_64 type-2 AppImage")
+	}
+	return nil
+}
+
+func (e *Installer) resolve(ctx context.Context, version string) (Artifact, int64, error) {
+	var result Artifact
+	if version != "" && !stableVersion.MatchString(version) {
+		return result, 0, errors.New("invalid stable application version")
+	}
+	endpoint := "latest"
+	if version != "" {
+		endpoint = "tags/v" + version
+	}
+	data, err := e.fetch(ctx, "https://api.github.com/repos/github/app/releases/"+endpoint, "", 0)
+	if err != nil {
+		return result, 0, err
+	}
+	var release struct {
+		Tag        string `json:"tag_name"`
+		Draft      *bool  `json:"draft"`
+		Prerelease *bool  `json:"prerelease"`
+		Assets     []struct {
+			Name   string `json:"name"`
+			URL    string `json:"browser_download_url"`
+			Digest string `json:"digest"`
+			Size   int64  `json:"size"`
+		} `json:"assets"`
+	}
+	if err := json.Unmarshal(data, &release); err != nil {
+		return result, 0, err
+	}
+	selected := strings.TrimPrefix(release.Tag, "v")
+	if release.Draft == nil || *release.Draft || release.Prerelease == nil || *release.Prerelease || release.Tag != "v"+selected || !stableVersion.MatchString(selected) || version != "" && selected != version {
+		return result, 0, errors.New("metadata must describe selected published stable release")
+	}
+	count := 0
+	var digest string
+	var size int64
+	for _, asset := range release.Assets {
+		if asset.Name == assetName {
+			count++
+			digest = strings.TrimPrefix(asset.Digest, "sha256:")
+			size = asset.Size
+			if asset.URL != sourceURL(selected) || asset.Digest != "sha256:"+digest || !digestPattern.MatchString(digest) {
+				return result, 0, errors.New("release asset has invalid source or SHA-256")
+			}
+		}
+	}
+	if count != 1 || size < 64 || size > maxArtifact {
+		return result, 0, errors.New("release requires exactly one valid-sized official Copilot AppImage")
+	}
+	return Artifact{1, selected, "github", "x86_64", digest, "", sourceURL(selected)}, size, nil
+}
+
+func (e *Installer) Prepare(ctx context.Context, directory, version string) (Artifact, error) {
+	a, size, err := e.resolve(ctx, version)
+	if err != nil {
+		return Artifact{}, err
+	}
+	return e.prepare(ctx, directory, a, size)
+}
+
+func (e *Installer) prepare(ctx context.Context, directory string, a Artifact, size int64) (Artifact, error) {
+	var result Artifact
+	var err error
+	directory, err = filepath.Abs(directory)
+	if err != nil {
+		return result, err
+	}
+	directory, err = filepath.EvalSymlinks(directory)
+	if err != nil {
+		return result, err
+	}
+	stage, err := os.MkdirTemp(directory, "github-copilot-")
+	if err != nil {
+		return result, err
+	}
+	keep := false
+	defer func() {
+		if !keep {
+			os.RemoveAll(stage)
+		}
+	}()
+	artifact := filepath.Join(stage, "GitHub-Copilot-"+a.Version+".AppImage")
+	if _, err := e.fetch(ctx, a.Source, artifact, size); err != nil {
+		return result, err
+	}
+	if err := checkArtifact(artifact, a.SHA256); err != nil {
+		return result, err
+	}
+	keep = true
+	a.Path = artifact
+	return a, nil
+}
+
+func older(candidate, installed string) bool {
+	a, b := strings.Split(candidate, "."), strings.Split(installed, ".")
+	for i := range a {
+		if len(a[i]) != len(b[i]) {
+			return len(a[i]) < len(b[i])
+		}
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+	return false
+}

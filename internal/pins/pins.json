@@ -4,9 +4,9 @@
     "version": "1.1.23",
     "name": "github",
     "arch": "x86_64",
-    "sha256": "766cbe348638c73b85127b71aa826d822f644f2f3b4b69d38c1b484afd504f09",
+    "sha256": "e5bf2984608f9ce9cc3b7521fec6e0d91ce61d753ba7362f519e5ebc4eb35999",
     "path": "",
-    "source": "https://github.com/github/app/releases/download/v1.1.23/GitHub-Copilot-linux-x64.rpm"
+    "source": "https://github.com/github/app/releases/download/v1.1.23/GitHub-Copilot-linux-x64.AppImage"
   },
   "jetbrains-toolbox-installer": {
     "schema_version": 1,

@@ -51,7 +51,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 			root := t.TempDir()
 			b := New(repository(t))
 			if name == "github-copilot-installer" {
-				b.CopilotRelease = &copilot.Artifact{SchemaVersion: 1, Version: "1.1.18", Name: "github", Arch: "x86_64", SHA256: strings.Repeat("b", 64), Source: "https://github.com/github/app/releases/download/v1.1.18/GitHub-Copilot-linux-x64.rpm"}
+				b.CopilotRelease = &copilot.Artifact{SchemaVersion: 1, Version: "1.1.18", Name: "github", Arch: "x86_64", SHA256: strings.Repeat("b", 64), Source: "https://github.com/github/app/releases/download/v1.1.18/GitHub-Copilot-linux-x64.AppImage"}
 			}
 			if name == "wowup-cf-installer" {
 				b.WowupRelease = &wowup.Artifact{SchemaVersion: 1, Version: "2.23.2", Name: "wowup-cf", Arch: "x86_64", SHA256: strings.Repeat("c", 64), Source: "https://github.com/WowUp/WowUp.CF/releases/download/v2.23.2/WowUp-CF-2.23.2.AppImage"}
@@ -91,9 +91,7 @@ func TestNativeHelperRPMs(t *testing.T) {
 						t.Fatal("application installation must run outside the RPM transaction")
 					}
 					checkInstallerScheduling(t, name, posttrans)
-					if name != "github-copilot-installer" {
-						checkBundleRemoval(t, name, string(native(t, "", "rpm", "-qp", "--qf", "%{PREUN}", rpm)))
-					}
+					checkBundleRemoval(t, name, string(native(t, "", "rpm", "-qp", "--qf", "%{PREUN}", rpm)))
 					continue
 				}
 				if len(data) != 0 {

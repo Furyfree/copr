@@ -46,7 +46,7 @@ func TestReplaceOneHelper(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.Version = "1.2.3"
-	a.Source = "https://github.com/github/app/releases/download/v1.2.3/GitHub-Copilot-linux-x64.rpm"
+	a.Source = "https://github.com/github/app/releases/download/v1.2.3/GitHub-Copilot-linux-x64.AppImage"
 	replaced, err := json.Marshal(a)
 	if err != nil {
 		t.Fatal(err)

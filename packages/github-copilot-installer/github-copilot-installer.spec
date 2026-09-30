@@ -2,7 +2,7 @@
 %global app_version pin
 
 Name:           github-copilot-installer
-Version:        0.3.0
+Version:        0.4.0
 Release:        0.1.app%{app_version}%{?dist}
 Summary:        Automatically install the selected official GitHub Copilot app
 License:        MIT AND BSD-3-Clause
@@ -12,18 +12,35 @@ ExclusiveArch:  x86_64
 
 BuildRequires:  golang >= 1.26.7
 BuildRequires:  systemd-rpm-macros
-Requires:       dnf5
 Requires:       rpm
 Requires:       systemd
 Requires:       util-linux >= 2.40
 %{?systemd_requires}
+Requires:       squashfs-tools
+Requires:       bash
+Requires:       coreutils
+Requires:       alsa-lib
+Requires:       fontconfig
+Requires:       freetype
+Requires:       fribidi
+Requires:       harfbuzz
+Requires:       libdrm
+Requires:       libglvnd-egl
+Requires:       libglvnd-glx
+Requires:       libX11
+Requires:       libX11-xcb
+Requires:       libxcb
+Requires:       mesa-libgbm
+Requires:       pulseaudio-libs
 
 %description
 Installing or upgrading this package schedules installation of Copilot
-%{app_version} directly from GitHub. A one-shot systemd job waits for DNF's
-transaction lock, checks the package-pinned SHA-256 and native RPM identity,
-and installs the official RPM through DNF. The proprietary app is not bundled.
-The job finishes separately from the transaction that installs this package.
+%{app_version} directly from GitHub. A one-shot systemd job verifies the
+package-selected SHA-256, extracts the official AppImage and creates desktop
+integration. The proprietary app is not bundled. The job finishes separately
+from the DNF transaction; failures remain visible in the service journal.
+Removing the package also removes the verified app and desktop integration,
+while preserving user data in ~/.copilot.
 
 %prep
 %autosetup -n github-copilot-installer-%{version}
@@ -61,6 +78,14 @@ else
 fi
 
 %preun
+if [ "$1" -eq 0 ]; then
+    # Stop running downloads and pending retries before removing their payload.
+    if test -d /run/systemd/system; then
+        systemctl stop github-copilot-installer.service || exit 1
+    fi
+    # Keep the helper installed if ownership verification or cleanup fails.
+    %{_bindir}/github-copilot-installer uninstall --assumeyes || exit 1
+fi
 %systemd_preun github-copilot-installer.service
 
 %postun
@@ -74,6 +99,10 @@ fi
 %{_unitdir}/github-copilot-installer.service
 
 %changelog
+* Wed Sep 30 2026 COPR maintainers - 0.4.0-0.1.app1.1.23
+- Install the official AppImage under /opt/github-copilot instead of the RPM.
+- Remove the verified app together with the helper package.
+
 * Sat Sep 20 2026 COPR maintainers - 0.3.0-0.1.app1.1.22
 - Pin GitHub Copilot 1.1.22.
 
