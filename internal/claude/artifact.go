@@ -19,7 +19,7 @@ import (
 	"github.com/Furyfree/copr/internal/pins"
 )
 
-const Version = "0.1.0"
+const Version = "0.1.1"
 const aptBase = "https://downloads.claude.ai/claude-desktop/apt/stable/"
 const indexPath = "main/binary-amd64/Packages"
 const indexURL = aptBase + "dists/stable/" + indexPath

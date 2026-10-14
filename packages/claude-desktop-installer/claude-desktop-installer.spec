@@ -2,7 +2,7 @@
 %global app_version pin
 
 Name:           claude-desktop-installer
-Version:        0.1.0
+Version:        0.1.1
 Release:        0.1.app%{app_version}%{?dist}
 Summary:        Install the selected official Claude Desktop Linux application
 License:        MIT AND BSD-3-Clause

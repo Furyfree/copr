@@ -18,7 +18,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const launcher = "#!/bin/sh\nexec /opt/claude-desktop/app/usr/lib/claude-desktop/claude-desktop \"$@\"\n"
+// Electron stores secrets unencrypted on desktops it does not recognise, such as
+// Hyprland. KDE keeps its KWallet default.
+const launcher = "#!/bin/sh\napp=/opt/claude-desktop/app/usr/lib/claude-desktop/claude-desktop\ncase \":$XDG_CURRENT_DESKTOP:\" in *:KDE:*) exec \"$app\" \"$@\" ;; esac\nexec \"$app\" --password-store=gnome-libsecret \"$@\"\n"
 const desktop = "[Desktop Entry]\nType=Application\nName=Claude\nComment=Claude Desktop\nExec=/usr/local/bin/claude-desktop %U\nTryExec=/opt/claude-desktop/app/usr/lib/claude-desktop/claude-desktop\nIcon=/opt/claude-desktop/app/usr/share/icons/hicolor/256x256/apps/claude-desktop.png\nTerminal=false\nCategories=Utility;Development;\nMimeType=x-scheme-handler/claude;\nStartupWMClass=com.anthropic.Claude\nStartupNotify=true\nSingleMainWindow=true\n"
 
 type link struct{ path, target string }

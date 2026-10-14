@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -330,5 +331,33 @@ func TestCancellationWhileWaitingForLock(t *testing.T) {
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("blocked lock ignored cancellation: %v", err)
+	}
+}
+
+func TestLauncherSelectsPasswordStore(t *testing.T) {
+	dir := t.TempDir()
+	app := filepath.Join(dir, "claude-desktop")
+	if err := os.WriteFile(app, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	script := strings.Replace(launcher, "/opt/claude-desktop/app/"+binaryPath, app, 1)
+	if script == launcher {
+		t.Fatal("launcher no longer names the installed binary")
+	}
+	for _, tc := range []struct{ desktop, want string }{
+		{"Hyprland", "--password-store=gnome-libsecret\nclaude://open\n"},
+		{"", "--password-store=gnome-libsecret\nclaude://open\n"},
+		{"KDE", "claude://open\n"},
+		{"Plasma:KDE", "claude://open\n"},
+	} {
+		cmd := exec.CommandContext(t.Context(), "/bin/sh", "-c", script, "claude-desktop", "claude://open")
+		cmd.Env = []string{"XDG_CURRENT_DESKTOP=" + tc.desktop}
+		got, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != tc.want {
+			t.Errorf("desktop %q: arguments %q, want %q", tc.desktop, got, tc.want)
+		}
 	}
 }
