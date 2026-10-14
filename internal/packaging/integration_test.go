@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/Furyfree/copr/internal/claude"
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/toolbox"
@@ -45,7 +46,7 @@ func selected(t *testing.T, name string) {
 }
 
 func TestNativeHelperRPMs(t *testing.T) {
-	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer"} {
+	for _, name := range []string{"github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer", "claude-desktop-installer"} {
 		t.Run(name, func(t *testing.T) {
 			selected(t, name)
 			root := t.TempDir()
@@ -61,6 +62,9 @@ func TestNativeHelperRPMs(t *testing.T) {
 			}
 			if name == "jetbrains-toolbox-installer" {
 				b.ToolboxRelease = &toolbox.Artifact{SchemaVersion: 1, Version: "3.8.1.90000", Name: "jetbrains-toolbox", Arch: "x86_64", SHA256: strings.Repeat("d", 64), Source: "https://download.jetbrains.com/toolbox/jetbrains-toolbox-3.8.1.90000.tar.gz"}
+			}
+			if name == "claude-desktop-installer" {
+				b.ClaudeRelease = &claude.Artifact{SchemaVersion: 1, Version: "2.100.0", Name: "claude-desktop", Arch: "x86_64", SHA256: strings.Repeat("e", 64), Source: "https://downloads.claude.ai/claude-desktop/apt/stable/pool/main/c/claude-desktop/claude-desktop_2.100.0_amd64.deb"}
 			}
 			srpm, err := b.Prepare(t.Context(), name, filepath.Join(root, "sources"))
 			if err != nil {
@@ -173,6 +177,22 @@ func TestNativeHelperRPMs(t *testing.T) {
 				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
 				if !bytes.Contains(rpmRelease, []byte("app1.13.2")) {
 					t.Fatalf("Obsidian version absent from RPM release: %s", rpmRelease)
+				}
+			}
+			if name == "claude-desktop-installer" {
+				release := native(t, "", filepath.Join(extracted, "usr/bin", name), "release", "--json")
+				a, err := claude.ParseRelease(release)
+				if err != nil || a != *b.ClaudeRelease {
+					t.Fatalf("prepared Claude release was not bundled: %s %v", release, err)
+				}
+				rpmRelease := native(t, "", "rpm", "-qp", "--qf", "%{RELEASE}", rpm)
+				if !bytes.Contains(rpmRelease, []byte("app2.100.0")) {
+					t.Fatalf("Claude version absent from RPM release: %s", rpmRelease)
+				}
+				for _, dependency := range []string{"gnupg2", "binutils", "xz", "libsecret", "xdg-desktop-portal"} {
+					if !slices.Contains(requires, dependency) {
+						t.Fatalf("missing Claude runtime dependency: %s", dependency)
+					}
 				}
 			}
 			if name == "jetbrains-toolbox-installer" {
@@ -463,6 +483,7 @@ func TestNativeCheckPackageScope(t *testing.T) {
 		{"wowup-cf-installer", "./cmd/coprctl ./internal/packaging ./cmd/wowup-cf-installer ./internal/wowup"},
 		{"obsidian-installer", "./cmd/coprctl ./internal/packaging ./cmd/obsidian-installer ./internal/obsidian"},
 		{"jetbrains-toolbox-installer", "./cmd/coprctl ./internal/packaging ./cmd/jetbrains-toolbox-installer ./internal/toolbox"},
+		{"claude-desktop-installer", "./cmd/coprctl ./internal/packaging ./cmd/claude-desktop-installer ./internal/claude"},
 		{"", "./..."},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

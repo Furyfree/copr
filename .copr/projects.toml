@@ -52,6 +52,12 @@ chroots = ["fedora-44-x86_64"]
 description = "MIT installer helper for the official JetBrains Toolbox App without autostart; no app payload included"
 homepage = "https://github.com/Furyfree/copr"
 
+[projects.claude-desktop-installer]
+name = "claude-desktop-installer"
+chroots = ["fedora-44-x86_64"]
+description = "MIT installer helper for Anthropic's official Claude Desktop Linux app; unofficial Fedora integration, no app payload included"
+homepage = "https://github.com/Furyfree/copr"
+
 [projects.obsidian-installer]
 name = "obsidian-installer"
 chroots = ["fedora-44-x86_64"]

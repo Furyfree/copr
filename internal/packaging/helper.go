@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/Furyfree/copr/internal/claude"
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/pins"
@@ -16,7 +17,7 @@ import (
 )
 
 // Each installer helper command builds on one self-contained implementation package.
-var helperImplementations = map[string]string{"github-copilot-installer": "copilot", "wowup-cf-installer": "wowup", "obsidian-installer": "obsidian", "jetbrains-toolbox-installer": "toolbox"}
+var helperImplementations = map[string]string{"github-copilot-installer": "copilot", "wowup-cf-installer": "wowup", "obsidian-installer": "obsidian", "jetbrains-toolbox-installer": "toolbox", "claude-desktop-installer": "claude"}
 
 func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, error) {
 	packageDir := filepath.Join(b.Root, "packages", name)
@@ -62,6 +63,11 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 			return "", err
 		}
 	}
+	if name == pins.Claude {
+		if err := Copy(filepath.Join(b.Root, "internal", "claude", "key.asc"), filepath.Join(tree, "internal", "claude", "key.asc")); err != nil {
+			return "", err
+		}
+	}
 	data, err := os.ReadFile(filepath.Join(b.Root, "internal", "pins", "pins.json"))
 	if err != nil {
 		return "", err
@@ -83,6 +89,10 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 	case pins.Toolbox:
 		if b.ToolboxRelease != nil {
 			override, err = json.Marshal(b.ToolboxRelease)
+		}
+	case pins.Claude:
+		if b.ClaudeRelease != nil {
+			override, err = json.Marshal(b.ClaudeRelease)
 		}
 	}
 	if err != nil {
@@ -120,6 +130,12 @@ func (b *Builder) prepareHelper(ctx context.Context, name, out string) (string, 
 		appVersion = a.Version
 	case pins.Toolbox:
 		a, err := toolbox.ParseRelease(raw)
+		if err != nil {
+			return "", err
+		}
+		appVersion = a.Version
+	case pins.Claude:
+		a, err := claude.ParseRelease(raw)
 		if err != nil {
 			return "", err
 		}

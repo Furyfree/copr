@@ -12,6 +12,7 @@ Fedora 44 x86_64 RPM recipes and installer helpers.
 | [woeusb](packages/woeusb/README.md) | Create Windows installation USB media |
 | [github-copilot-installer](packages/github-copilot-installer/README.md) | Install the official GitHub Copilot application |
 | [obsidian-installer](packages/obsidian-installer/README.md) | Install the official Obsidian application |
+| [claude-desktop-installer](packages/claude-desktop-installer/README.md) | Install official Claude Desktop with unofficial Fedora integration |
 | [wowup-cf-installer](packages/wowup-cf-installer/README.md) | Install WoWUp with CurseForge |
 | [jetbrains-toolbox-installer](packages/jetbrains-toolbox-installer/README.md) | Install JetBrains Toolbox |
 

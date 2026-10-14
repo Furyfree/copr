@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/Furyfree/copr/internal/claude"
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/packaging"
@@ -56,6 +57,13 @@ func run(ctx context.Context, args []string) error {
 				}
 				b.ObsidianRelease = &a
 				fmt.Fprintf(os.Stderr, "Selected Obsidian %s, SHA-256 %s\n", a.Version, a.SHA256)
+			case "claude-desktop-installer":
+				a, err := claude.LatestRelease(ctx)
+				if err != nil {
+					return err
+				}
+				b.ClaudeRelease = &a
+				fmt.Fprintf(os.Stderr, "Selected Claude Desktop %s, SHA-256 %s\n", a.Version, a.SHA256)
 			case "jetbrains-toolbox-installer":
 				a, err := toolbox.LatestRelease(ctx)
 				if err != nil {

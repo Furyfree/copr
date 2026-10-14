@@ -1,0 +1,73 @@
+.TH CLAUDE-DESKTOP-INSTALLER 1 "October 2026" "claude-desktop-installer 0.1.0"
+.SH NAME
+claude-desktop-installer \- verified official Claude Desktop application delivery
+.SH SYNOPSIS
+.B claude-desktop-installer install --assumeyes
+.br
+.B claude-desktop-installer update --assumeyes
+.br
+.B claude-desktop-installer release --json
+.br
+.B claude-desktop-installer prepare --directory DIR
+.RB [ --app-version " VERSION"]
+.br
+.B claude-desktop-installer apply --deb FILE --sha256 HEX --app-version VERSION --assumeyes
+.br
+.B claude-desktop-installer status --json
+.br
+.B claude-desktop-installer uninstall --assumeyes
+.SH DESCRIPTION
+Installing or upgrading the helper RPM queues a one-shot systemd job after
+DNF finishes. The helper verifies Anthropic's signed repository metadata,
+checks the package-selected SHA-256, extracts the official Linux Debian
+package and creates desktop integration. It does not run Debian maintainer
+scripts, add an APT repository, or disable the application sandbox.
+COPR hosts only the helper. Anthropic does not support Fedora.
+.PP
+Check systemctl status claude-desktop-installer.service and
+journalctl -u claude-desktop-installer.service for completion or failure.
+The job retries failures, up to three starts in 15 minutes.
+Reinstalling the RPM queues another attempt.
+.PP
+New helper releases select application updates. Claude Desktop on Linux
+does not update itself. Cowork requires a paid plan and working virtualization;
+the helper does not change user groups or firmware paths.
+.SH COMMANDS
+.TP
+.B install, update
+Require root and --assumeyes. Reconcile the package-selected release.
+Reject foreign or changed files, metadata drift and downgrades.
+Repair missing known desktop links from the retained verified package offline.
+.TP
+.B prepare
+Download an official release into the requested existing directory without
+installing it. With no version, select the newest version from Anthropic's
+signed stable package index. Print the artifact metadata as JSON.
+.TP
+.B apply
+Require root and explicit --deb, --sha256, --app-version and --assumeyes.
+Verify the supplied package and ownership before replacing the bundle.
+The caller approves the digest; this command does not fetch repository metadata.
+.TP
+.B release, status
+Read-only JSON output. Release prints the packaged selection without network
+access. Status verifies installation and ownership, including interrupted removal.
+.TP
+.B uninstall
+Require root and --assumeyes. Remove only verified owned application files
+and desktop integration. Preserve user configuration and other installations.
+Retry interrupted removal; changed or foreign files block removal.
+Final RPM removal invokes this command.
+.SH FILES
+.TP
+.B /opt/claude-desktop/
+Verified Debian package, extracted application, launcher, desktop entry and receipt.
+.TP
+.B /usr/local/bin/claude-desktop
+Application launch command.
+.TP
+.B /usr/local/share/applications/com.anthropic.Claude.desktop
+Application menu entry and claude:// link handler.
+.SH EXIT STATUS
+Zero indicates success. Nonzero indicates an invalid request, failed
+verification, unsupported platform or incomplete operation.

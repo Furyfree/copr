@@ -19,6 +19,7 @@ const (
 	Toolbox  = "jetbrains-toolbox-installer"
 	Wowup    = "wowup-cf-installer"
 	Obsidian = "obsidian-installer"
+	Claude   = "claude-desktop-installer"
 )
 
 // Artifact is one helper's packaged application release.
@@ -38,6 +39,7 @@ type File struct {
 	Toolbox  Artifact `json:"jetbrains-toolbox-installer"`
 	Wowup    Artifact `json:"wowup-cf-installer"`
 	Obsidian Artifact `json:"obsidian-installer"`
+	Claude   Artifact `json:"claude-desktop-installer"`
 }
 
 func Decode(data []byte) (File, error) {
@@ -50,7 +52,7 @@ func Decode(data []byte) (File, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return f, errors.New("expected one pins object")
 	}
-	if f.Copilot.Version == "" || f.Toolbox.Version == "" || f.Wowup.Version == "" || f.Obsidian.Version == "" {
+	if f.Copilot.Version == "" || f.Toolbox.Version == "" || f.Wowup.Version == "" || f.Obsidian.Version == "" || f.Claude.Version == "" {
 		return f, errors.New("pins file must name every installer helper")
 	}
 	return f, nil
@@ -103,6 +105,8 @@ func Replace(data []byte, name string, artifact []byte) ([]byte, error) {
 		f.Wowup = a
 	case Obsidian:
 		f.Obsidian = a
+	case Claude:
+		f.Claude = a
 	default:
 		return nil, fmt.Errorf("unknown installer helper %q", name)
 	}
@@ -119,6 +123,8 @@ func (f File) artifact(name string) (Artifact, error) {
 		return f.Wowup, nil
 	case Obsidian:
 		return f.Obsidian, nil
+	case Claude:
+		return f.Claude, nil
 	default:
 		return Artifact{}, fmt.Errorf("unknown installer helper %q", name)
 	}

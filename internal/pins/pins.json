@@ -34,5 +34,14 @@
     "sha256": "e0d8e0a611624de8c9c7dcd8a9e648279fb0a0d552faa1312b7e4f3a5fa72663",
     "path": "",
     "source": "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.13.7/Obsidian-1.13.7.AppImage"
+  },
+  "claude-desktop-installer": {
+    "schema_version": 1,
+    "version": "2.37337.1",
+    "name": "claude-desktop",
+    "arch": "x86_64",
+    "sha256": "41745b0914f0ff51631a1ff1bb403b836bf5c995845cca6742dd39bca3a2da14",
+    "path": "",
+    "source": "https://downloads.claude.ai/claude-desktop/apt/stable/pool/main/c/claude-desktop/claude-desktop_2.37337.1_amd64.deb"
   }
 }

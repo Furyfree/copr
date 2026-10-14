@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Furyfree/copr/internal/claude"
 	"github.com/Furyfree/copr/internal/copilot"
 	"github.com/Furyfree/copr/internal/obsidian"
 	"github.com/Furyfree/copr/internal/toolbox"
@@ -81,6 +82,7 @@ type Builder struct {
 	WowupRelease    *wowup.Artifact
 	ObsidianRelease *obsidian.Artifact
 	ToolboxRelease  *toolbox.Artifact
+	ClaudeRelease   *claude.Artifact
 }
 
 func New(root string) *Builder {
@@ -112,7 +114,7 @@ func (b *Builder) Prepare(ctx context.Context, name, out string) (string, error)
 		return b.prepareNimbusDevelop(ctx, out)
 	case "voxtype":
 		return b.prepareVoxtype(ctx, out)
-	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer":
+	case "github-copilot-installer", "wowup-cf-installer", "jetbrains-toolbox-installer", "obsidian-installer", "claude-desktop-installer":
 		return b.prepareHelper(ctx, name, out)
 	default:
 		return b.SRPM(ctx, filepath.Join(b.Root, "packages", name, name+".spec"), out)
